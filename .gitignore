@@ -1,0 +1,25 @@
+# Build
+build/
+cmake-build-*/
+out/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+CMakeSettings.json
+compile_commands.json
+
+# Objets / binaires
+*.o
+*.obj
+*.exe
+*.lib
+*.a
+*.so
+*.dll
+
+# OS
+.DS_Store
+Thumbs.db
