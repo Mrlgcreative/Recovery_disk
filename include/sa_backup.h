@@ -25,7 +25,7 @@ namespace SABackup {
         char     model[42];         /* Modele du disque                 */
         uint32_t module_count;      /* Nombre de modules sauvegardes    */
         uint32_t timestamp;         /* Unix timestamp                   */
-        uint8_t  _pad[400];        /* Reserve — total header = 512     */
+        uint8_t  _pad[396];        /* Reserve — total header = 512     */
     };
     #pragma pack(pop)
 

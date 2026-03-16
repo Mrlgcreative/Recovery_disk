@@ -6,7 +6,7 @@
 #include "config.h"
 
 #include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
 #include <cstdio>
