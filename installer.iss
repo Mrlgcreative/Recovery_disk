@@ -51,6 +51,10 @@ Name: "addtopath"; Description: "Ajouter au PATH systeme (CLI)"; GroupDescriptio
 Source: "build\hdd_unlock_gui.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "build\hdd_unlock.exe"; DestDir: "{app}"; Flags: ignoreversion
 
+; Ressources (police, logo)
+Source: "resources\Montserrat-Medium.ttf"; DestDir: "{app}\resources"; Flags: ignoreversion
+Source: "resources\logo_256.png"; DestDir: "{app}\resources"; Flags: ignoreversion
+
 ; Documentation
 Source: "README.md"; DestDir: "{app}\doc"; Flags: ignoreversion
 Source: "LICENSE.txt"; DestDir: "{app}\doc"; Flags: ignoreversion

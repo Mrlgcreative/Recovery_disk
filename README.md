@@ -31,24 +31,24 @@ Outil bas-niveau C++20 pour le diagnostic et la récupération de mots de passe 
 
 L'interface utilise un docking layout avec 9 panneaux :
 
-| Panneau | Description |
-|---|---|
-| Disques | Liste cliquable des disques détectés |
-| Détails | Informations IDENTIFY du disque sélectionné |
-| Sécurité ATA | Flags de sécurité avec code couleur |
-| Hex Viewer | Dump hexadécimal brut (512 bytes) |
-| Constructeur | Détection vendor (WD, Seagate, Toshiba, HGST) |
-| Déverrouillage | Workflow de déverrouillage pas-à-pas |
-| Backup SA | Sauvegarde Service Area avec intégrité SHA-256 |
-| Mots de passe | Extraction et affichage des passwords |
-| Console | Journal des événements en temps réel |
+| Panneau        | Description                                    |
+| -------------- | ---------------------------------------------- |
+| Disques        | Liste cliquable des disques détectés           |
+| Détails        | Informations IDENTIFY du disque sélectionné    |
+| Sécurité ATA   | Flags de sécurité avec code couleur            |
+| Hex Viewer     | Dump hexadécimal brut (512 bytes)              |
+| Constructeur   | Détection vendor (WD, Seagate, Toshiba, HGST)  |
+| Déverrouillage | Workflow de déverrouillage pas-à-pas           |
+| Backup SA      | Sauvegarde Service Area avec intégrité SHA-256 |
+| Mots de passe  | Extraction et affichage des passwords          |
+| Console        | Journal des événements en temps réel           |
 
 ## Prérequis
 
-| Plateforme | Compilateur | Droits |
-|---|---|---|
-| Windows 10+ (64-bit) | MSVC 19.29+ / MinGW-w64 (GCC 13+) | Administrateur |
-| Linux (kernel ≥ 2.6.30) | GCC 10+ / Clang 12+ | root ou groupe `disk` |
+| Plateforme              | Compilateur                       | Droits                |
+| ----------------------- | --------------------------------- | --------------------- |
+| Windows 10+ (64-bit)    | MSVC 19.29+ / MinGW-w64 (GCC 13+) | Administrateur        |
+| Linux (kernel ≥ 2.6.30) | GCC 10+ / Clang 12+               | root ou groupe `disk` |
 
 - **CMake 3.20+**
 - **DirectX 11** (inclus dans Windows SDK)
@@ -155,12 +155,12 @@ GUI (Dear ImGui + DX11)
 
 ## Vendeurs supportés
 
-| Constructeur | Méthode | Commandes VSC |
-|---|---|---|
-| Western Digital | Vendor Specific Commands | 0xE0 / 0xE1 |
-| Seagate | SMART Vendor Page | 0xD6 |
-| Toshiba | Vendor Commands | 0xC0 / 0xC1 |
-| HGST | Vendor Commands | 0xC0 / 0xC1 |
+| Constructeur    | Méthode                  | Commandes VSC |
+| --------------- | ------------------------ | ------------- |
+| Western Digital | Vendor Specific Commands | 0xE0 / 0xE1   |
+| Seagate         | SMART Vendor Page        | 0xD6          |
+| Toshiba         | Vendor Commands          | 0xC0 / 0xC1   |
+| HGST            | Vendor Commands          | 0xC0 / 0xC1   |
 
 ## Installeur Windows
 
@@ -175,9 +175,9 @@ L'installeur inclut le CLI, le GUI, la documentation, et propose l'ajout au PATH
 
 ## Raccourcis clavier
 
-| Touche | Action |
-|---|---|
-| F5 | Rafraîchir la liste des disques |
+| Touche | Action                          |
+| ------ | ------------------------------- |
+| F5     | Rafraîchir la liste des disques |
 
 ## Régénérer les logos
 

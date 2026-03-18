@@ -21,6 +21,17 @@
 #include <windows.h>
 
 #include "gui.h"
+#include <string>
+
+/* Retourne le repertoire contenant l'executable */
+static std::string get_exe_dir() {
+    char buf[MAX_PATH];
+    DWORD len = GetModuleFileNameA(nullptr, buf, MAX_PATH);
+    if (len == 0) return ".";
+    std::string path(buf, len);
+    auto pos = path.find_last_of("\\/");
+    return (pos != std::string::npos) ? path.substr(0, pos) : ".";
+}
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
@@ -94,8 +105,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     /* Theme personnalise */
     GUI::apply_theme();
 
-    /* Police Montserrat 12px */
-    io.Fonts->AddFontFromFileTTF("../resources/Montserrat-Medium.ttf", 16.0f);
+    /* Police Montserrat 16px — chemin relatif a l'exe */
+    std::string exe_dir = get_exe_dir();
+    std::string font_path = exe_dir + "\\resources\\Montserrat-Medium.ttf";
+    if (GetFileAttributesA(font_path.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        io.Fonts->AddFontFromFileTTF(font_path.c_str(), 16.0f);
+    } else {
+        io.Fonts->AddFontDefault();   /* fallback si police absente */
+    }
     io.FontGlobalScale = 1.0f;
 
     /* Backends */
@@ -106,7 +123,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     {
         ID3D11ShaderResourceView* logo_srv = nullptr;
         int logo_w = 0, logo_h = 0;
-        if (GUI::load_texture_from_file("../resources/logo_256.png",
+        std::string logo_path = exe_dir + "\\resources\\logo_256.png";
+        if (GUI::load_texture_from_file(logo_path.c_str(),
                 g_pd3dDevice, &logo_srv, &logo_w, &logo_h)) {
             GUI::set_logo_texture(logo_srv, logo_w, logo_h);
         }
