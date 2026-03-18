@@ -33,6 +33,12 @@
 #include <ctime>
 #include <algorithm>
 
+#ifdef _WIN32
+#include <d3d11.h>
+#include <wincodec.h>   /* WIC — chargement PNG natif Windows */
+#pragma comment(lib, "windowscodecs.lib")
+#endif
+
 /* ==========================================================================
  *  Constructeur
  * ========================================================================== */
@@ -184,6 +190,226 @@ void GUI::apply_theme() {
     c[ImGuiCol_TableBorderLight]     = ImVec4(0.16f, 0.18f, 0.24f, 0.60f);
     c[ImGuiCol_TableRowBg]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     c[ImGuiCol_TableRowBgAlt]        = ImVec4(0.10f, 0.10f, 0.14f, 0.40f);
+}
+
+/* --------------------------------------------------------------------------
+ *  Theme clair
+ * -------------------------------------------------------------------------- */
+
+static void apply_light_colors() {
+    ImGuiStyle& s = ImGui::GetStyle();
+    ImVec4* c = s.Colors;
+
+    /* Background */
+    c[ImGuiCol_WindowBg]             = ImVec4(0.95f, 0.95f, 0.96f, 1.00f);
+    c[ImGuiCol_ChildBg]              = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    c[ImGuiCol_PopupBg]              = ImVec4(0.98f, 0.98f, 0.98f, 0.96f);
+
+    /* Borders */
+    c[ImGuiCol_Border]               = ImVec4(0.72f, 0.72f, 0.75f, 0.60f);
+    c[ImGuiCol_BorderShadow]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+    /* Frame */
+    c[ImGuiCol_FrameBg]              = ImVec4(0.88f, 0.88f, 0.90f, 1.00f);
+    c[ImGuiCol_FrameBgHovered]       = ImVec4(0.82f, 0.84f, 0.88f, 1.00f);
+    c[ImGuiCol_FrameBgActive]        = ImVec4(0.76f, 0.78f, 0.84f, 1.00f);
+
+    /* Title */
+    c[ImGuiCol_TitleBg]              = ImVec4(0.86f, 0.86f, 0.90f, 1.00f);
+    c[ImGuiCol_TitleBgActive]        = ImVec4(0.78f, 0.80f, 0.88f, 1.00f);
+    c[ImGuiCol_TitleBgCollapsed]     = ImVec4(0.90f, 0.90f, 0.92f, 0.60f);
+
+    /* Tabs */
+    c[ImGuiCol_Tab]                  = ImVec4(0.86f, 0.86f, 0.90f, 1.00f);
+    c[ImGuiCol_TabHovered]           = ImVec4(0.62f, 0.68f, 0.82f, 1.00f);
+    c[ImGuiCol_TabSelected]          = ImVec4(0.70f, 0.74f, 0.86f, 1.00f);
+    c[ImGuiCol_TabDimmed]            = ImVec4(0.90f, 0.90f, 0.92f, 1.00f);
+    c[ImGuiCol_TabDimmedSelected]    = ImVec4(0.82f, 0.84f, 0.90f, 1.00f);
+
+    /* Header (collapsing, selectable) */
+    c[ImGuiCol_Header]               = ImVec4(0.76f, 0.78f, 0.86f, 1.00f);
+    c[ImGuiCol_HeaderHovered]        = ImVec4(0.68f, 0.72f, 0.84f, 1.00f);
+    c[ImGuiCol_HeaderActive]         = ImVec4(0.64f, 0.68f, 0.82f, 1.00f);
+
+    /* Buttons */
+    c[ImGuiCol_Button]               = ImVec4(0.68f, 0.72f, 0.84f, 1.00f);
+    c[ImGuiCol_ButtonHovered]        = ImVec4(0.56f, 0.62f, 0.80f, 1.00f);
+    c[ImGuiCol_ButtonActive]         = ImVec4(0.50f, 0.56f, 0.76f, 1.00f);
+
+    /* Separator */
+    c[ImGuiCol_Separator]            = ImVec4(0.72f, 0.72f, 0.75f, 0.60f);
+    c[ImGuiCol_SeparatorHovered]     = ImVec4(0.46f, 0.54f, 0.74f, 1.00f);
+    c[ImGuiCol_SeparatorActive]      = ImVec4(0.40f, 0.48f, 0.70f, 1.00f);
+
+    /* Resize grip */
+    c[ImGuiCol_ResizeGrip]           = ImVec4(0.60f, 0.64f, 0.76f, 0.40f);
+    c[ImGuiCol_ResizeGripHovered]    = ImVec4(0.50f, 0.56f, 0.72f, 0.70f);
+    c[ImGuiCol_ResizeGripActive]     = ImVec4(0.44f, 0.50f, 0.68f, 0.90f);
+
+    /* Scrollbar */
+    c[ImGuiCol_ScrollbarBg]          = ImVec4(0.90f, 0.90f, 0.92f, 0.60f);
+    c[ImGuiCol_ScrollbarGrab]        = ImVec4(0.70f, 0.72f, 0.78f, 1.00f);
+    c[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.62f, 0.64f, 0.72f, 1.00f);
+    c[ImGuiCol_ScrollbarGrabActive]  = ImVec4(0.54f, 0.56f, 0.66f, 1.00f);
+
+    /* Checkmark, slider */
+    c[ImGuiCol_CheckMark]            = ImVec4(0.24f, 0.42f, 0.76f, 1.00f);
+    c[ImGuiCol_SliderGrab]           = ImVec4(0.30f, 0.46f, 0.78f, 1.00f);
+    c[ImGuiCol_SliderGrabActive]     = ImVec4(0.26f, 0.40f, 0.72f, 1.00f);
+
+    /* Text */
+    c[ImGuiCol_Text]                 = ImVec4(0.10f, 0.10f, 0.14f, 1.00f);
+    c[ImGuiCol_TextDisabled]         = ImVec4(0.48f, 0.48f, 0.54f, 1.00f);
+
+    /* Docking */
+    c[ImGuiCol_DockingPreview]       = ImVec4(0.40f, 0.54f, 0.80f, 0.70f);
+    c[ImGuiCol_DockingEmptyBg]       = ImVec4(0.92f, 0.92f, 0.94f, 1.00f);
+
+    /* MenuBar */
+    c[ImGuiCol_MenuBarBg]            = ImVec4(0.88f, 0.88f, 0.92f, 1.00f);
+
+    /* Table */
+    c[ImGuiCol_TableHeaderBg]        = ImVec4(0.82f, 0.84f, 0.90f, 1.00f);
+    c[ImGuiCol_TableBorderStrong]    = ImVec4(0.72f, 0.72f, 0.78f, 1.00f);
+    c[ImGuiCol_TableBorderLight]     = ImVec4(0.80f, 0.80f, 0.84f, 0.60f);
+    c[ImGuiCol_TableRowBg]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    c[ImGuiCol_TableRowBgAlt]        = ImVec4(0.88f, 0.88f, 0.92f, 0.40f);
+}
+
+/* --------------------------------------------------------------------------
+ *  apply_theme(AppTheme) — bascule entre clair et sombre
+ * -------------------------------------------------------------------------- */
+
+void GUI::apply_theme(AppTheme theme) {
+    theme_ = theme;
+
+    /* Geometrie commune */
+    ImGuiStyle& s = ImGui::GetStyle();
+    s.WindowRounding    = 4.0f;
+    s.FrameRounding     = 3.0f;
+    s.GrabRounding      = 3.0f;
+    s.ScrollbarRounding = 4.0f;
+    s.TabRounding       = 3.0f;
+    s.ChildRounding     = 3.0f;
+    s.PopupRounding     = 4.0f;
+    s.WindowPadding     = ImVec2(10, 10);
+    s.FramePadding      = ImVec2(8, 4);
+    s.ItemSpacing       = ImVec2(8, 6);
+    s.ScrollbarSize     = 14.0f;
+    s.GrabMinSize       = 12.0f;
+    s.WindowBorderSize  = 1.0f;
+    s.FrameBorderSize   = 0.0f;
+    s.TabBorderSize     = 0.0f;
+
+    if (theme == AppTheme::LIGHT)
+        apply_light_colors();
+    else
+        apply_theme();   /* reutilise le dark existant */
+}
+
+AppTheme GUI::current_theme() {
+    return theme_;
+}
+
+/* ==========================================================================
+ *  Logo texture (PNG → DX11 ShaderResourceView via WIC)
+ * ========================================================================== */
+
+#ifdef _WIN32
+bool GUI::load_texture_from_file(const char* path,
+                                 ID3D11Device* device,
+                                 ID3D11ShaderResourceView** out_srv,
+                                 int* out_w, int* out_h)
+{
+    *out_srv = nullptr;
+    *out_w = *out_h = 0;
+
+    /* Convertir chemin en wide string */
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, path, -1, nullptr, 0);
+    if (wlen <= 0) return false;
+    wchar_t* wpath = (wchar_t*)_alloca(wlen * sizeof(wchar_t));
+    MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, wlen);
+
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
+    IWICImagingFactory* wicFactory = nullptr;
+    HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr,
+        CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wicFactory));
+    if (FAILED(hr)) return false;
+
+    IWICBitmapDecoder* decoder = nullptr;
+    hr = wicFactory->CreateDecoderFromFilename(wpath, nullptr,
+        GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder);
+    if (FAILED(hr)) { wicFactory->Release(); return false; }
+
+    IWICBitmapFrameDecode* frame = nullptr;
+    hr = decoder->GetFrame(0, &frame);
+    if (FAILED(hr)) { decoder->Release(); wicFactory->Release(); return false; }
+
+    IWICFormatConverter* converter = nullptr;
+    hr = wicFactory->CreateFormatConverter(&converter);
+    if (FAILED(hr)) { frame->Release(); decoder->Release(); wicFactory->Release(); return false; }
+
+    hr = converter->Initialize(frame, GUID_WICPixelFormat32bppRGBA,
+        WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
+    if (FAILED(hr)) { converter->Release(); frame->Release(); decoder->Release(); wicFactory->Release(); return false; }
+
+    UINT w = 0, h = 0;
+    converter->GetSize(&w, &h);
+
+    BYTE* pixels = new BYTE[w * h * 4];
+    hr = converter->CopyPixels(nullptr, w * 4, w * h * 4, pixels);
+
+    converter->Release();
+    frame->Release();
+    decoder->Release();
+    wicFactory->Release();
+
+    if (FAILED(hr)) { delete[] pixels; return false; }
+
+    /* Creer la texture DX11 */
+    D3D11_TEXTURE2D_DESC td = {};
+    td.Width            = w;
+    td.Height           = h;
+    td.MipLevels        = 1;
+    td.ArraySize        = 1;
+    td.Format           = DXGI_FORMAT_R8G8B8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage            = D3D11_USAGE_DEFAULT;
+    td.BindFlags        = D3D11_BIND_SHADER_RESOURCE;
+
+    D3D11_SUBRESOURCE_DATA initData = {};
+    initData.pSysMem     = pixels;
+    initData.SysMemPitch = w * 4;
+
+    ID3D11Texture2D* tex = nullptr;
+    hr = device->CreateTexture2D(&td, &initData, &tex);
+    delete[] pixels;
+    if (FAILED(hr)) return false;
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format                    = td.Format;
+    srvDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels       = 1;
+
+    hr = device->CreateShaderResourceView(tex, &srvDesc, out_srv);
+    tex->Release();
+    if (FAILED(hr)) return false;
+
+    *out_w = (int)w;
+    *out_h = (int)h;
+    return true;
+}
+#else
+bool GUI::load_texture_from_file(const char*, ID3D11Device*,
+                                 ID3D11ShaderResourceView**, int*, int*)
+{ return false; }
+#endif
+
+void GUI::set_logo_texture(ID3D11ShaderResourceView* srv, int w, int h) {
+    logo_srv_ = srv;
+    logo_w_   = w;
+    logo_h_   = h;
 }
 
 /* ==========================================================================
@@ -535,6 +761,18 @@ void GUI::draw_menu_bar() {
         ImGui::MenuItem("Mots de passe SA",  nullptr, &show_pwd_);
         ImGui::Separator();
         ImGui::MenuItem("Console",           nullptr, &show_log_);
+        ImGui::Separator();
+
+        if (ImGui::BeginMenu("Theme")) {
+            bool is_dark  = (theme_ == AppTheme::DARK);
+            bool is_light = (theme_ == AppTheme::LIGHT);
+            if (ImGui::MenuItem("Sombre", nullptr, &is_dark))
+                apply_theme(AppTheme::DARK);
+            if (ImGui::MenuItem("Clair",  nullptr, &is_light))
+                apply_theme(AppTheme::LIGHT);
+            ImGui::EndMenu();
+        }
+
         ImGui::EndMenu();
     }
 
@@ -565,9 +803,10 @@ void GUI::draw_device_panel() {
 
     /* Bouton scan */
     float avail = ImGui::GetContentRegionAvail().x;
-    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.15f, 0.30f, 0.55f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4(0.20f, 0.40f, 0.70f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4(0.18f, 0.36f, 0.62f, 1.0f));
+    bool light = (theme_ == AppTheme::LIGHT);
+    ImGui::PushStyleColor(ImGuiCol_Button,        light ? ImVec4(0.40f, 0.55f, 0.80f, 1.0f) : ImVec4(0.15f, 0.30f, 0.55f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  light ? ImVec4(0.34f, 0.50f, 0.76f, 1.0f) : ImVec4(0.20f, 0.40f, 0.70f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   light ? ImVec4(0.30f, 0.46f, 0.72f, 1.0f) : ImVec4(0.18f, 0.36f, 0.62f, 1.0f));
     if (ImGui::Button("Scanner (F5)", ImVec2(avail, 0)))
         do_scan();
     ImGui::PopStyleColor(3);
@@ -597,9 +836,9 @@ void GUI::draw_device_panel() {
 
         /* Couleur de fond selon selection */
         if (is_sel) {
-            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.16f, 0.20f, 0.32f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, light ? ImVec4(0.76f, 0.80f, 0.90f, 1.0f) : ImVec4(0.16f, 0.20f, 0.32f, 1.0f));
         } else {
-            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.11f, 0.11f, 0.15f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, light ? ImVec4(0.90f, 0.90f, 0.93f, 1.0f) : ImVec4(0.11f, 0.11f, 0.15f, 1.0f));
         }
 
         char child_id[32];
@@ -992,9 +1231,10 @@ void GUI::draw_unlock_panel() {
     ImGui::Spacing();
 
     /* Bouton unlock */
-    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.55f, 0.15f, 0.15f, 1));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4(0.70f, 0.20f, 0.20f, 1));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4(0.62f, 0.18f, 0.18f, 1));
+    bool light_u = (theme_ == AppTheme::LIGHT);
+    ImGui::PushStyleColor(ImGuiCol_Button,        light_u ? ImVec4(0.80f, 0.35f, 0.35f, 1) : ImVec4(0.55f, 0.15f, 0.15f, 1));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  light_u ? ImVec4(0.85f, 0.42f, 0.42f, 1) : ImVec4(0.70f, 0.20f, 0.20f, 1));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   light_u ? ImVec4(0.75f, 0.30f, 0.30f, 1) : ImVec4(0.62f, 0.18f, 0.18f, 1));
 
     float avail = ImGui::GetContentRegionAvail().x;
     if (ImGui::Button("DEVERROUILLER", ImVec2(avail, 36)))
@@ -1006,14 +1246,14 @@ void GUI::draw_unlock_panel() {
     ImGui::Spacing();
 
     if (unlock_state_ == UnlockState::SUCCESS) {
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.05f, 0.20f, 0.05f, 1));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, light_u ? ImVec4(0.80f, 0.95f, 0.80f, 1) : ImVec4(0.05f, 0.20f, 0.05f, 1));
         ImGui::BeginChild("##ok", ImVec2(avail, 50), ImGuiChildFlags_Borders);
         ImGui::TextColored(ImVec4(0.3f, 0.95f, 0.3f, 1), "SUCCES");
         ImGui::TextWrapped("%s", unlock_msg_.c_str());
         ImGui::EndChild();
         ImGui::PopStyleColor();
     } else if (unlock_state_ == UnlockState::FAILED) {
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.20f, 0.05f, 0.05f, 1));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, light_u ? ImVec4(0.98f, 0.85f, 0.85f, 1) : ImVec4(0.20f, 0.05f, 0.05f, 1));
         ImGui::BeginChild("##fail", ImVec2(avail, 50), ImGuiChildFlags_Borders);
         ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "ECHEC");
         ImGui::TextWrapped("%s", unlock_msg_.c_str());
@@ -1204,7 +1444,7 @@ void GUI::draw_status_bar() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 2));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.08f, 0.08f, 0.11f, 1));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, (theme_ == AppTheme::LIGHT) ? ImVec4(0.90f, 0.90f, 0.92f, 1) : ImVec4(0.08f, 0.08f, 0.11f, 1));
 
     ImGui::Begin("##statusbar", nullptr,
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
@@ -1235,12 +1475,23 @@ void GUI::draw_about_popup() {
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(420, 260));
+    ImGui::SetNextWindowSize(ImVec2(440, 380));
 
     if (ImGui::BeginPopupModal("A propos", &show_about_,
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
 
         ImGui::Spacing();
+
+        /* ---- Logo centre ---- */
+        if (logo_srv_) {
+            float disp_w = 80.0f;
+            float disp_h = disp_w * ((float)logo_h_ / (float)logo_w_);
+            float avail  = ImGui::GetContentRegionAvail().x;
+            ImGui::SetCursorPosX((avail - disp_w) * 0.5f + ImGui::GetCursorPosX());
+            ImGui::Image((ImTextureID)logo_srv_, ImVec2(disp_w, disp_h));
+            ImGui::Spacing();
+        }
+
         ImGui::TextColored(ImVec4(0.55f, 0.70f, 1.0f, 1),
             "HDD Password Recovery Tool");
         ImGui::Text("Version 1.0.0");

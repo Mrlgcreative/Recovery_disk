@@ -59,6 +59,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     wc.hInstance     = hInstance;
     wc.lpszClassName = "HddUnlockGUI";
     wc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+    wc.hIcon         = LoadIconA(hInstance, "IDI_APPICON");
+    wc.hIconSm       = wc.hIcon;
     RegisterClassExA(&wc);
 
     HWND hwnd = CreateWindowExA(
@@ -92,12 +94,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     /* Theme personnalise */
     GUI::apply_theme();
 
-    /* Ajuster la taille de police par defaut */
+    /* Police Montserrat 12px */
+    io.Fonts->AddFontFromFileTTF("../resources/Montserrat-Medium.ttf", 16.0f);
     io.FontGlobalScale = 1.0f;
 
     /* Backends */
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
+
+    /* -- Charger le logo PNG comme texture DX11 pour le popup About -- */
+    {
+        ID3D11ShaderResourceView* logo_srv = nullptr;
+        int logo_w = 0, logo_h = 0;
+        if (GUI::load_texture_from_file("../resources/logo_256.png",
+                g_pd3dDevice, &logo_srv, &logo_w, &logo_h)) {
+            GUI::set_logo_texture(logo_srv, logo_w, logo_h);
+        }
+    }
 
     /* -- Application GUI -- */
     GUI gui;
@@ -106,7 +119,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     gui.do_scan();
 
     /* -- Boucle de rendu -- */
-    const ImVec4 clear_color(0.05f, 0.05f, 0.07f, 1.00f);
     bool running = true;
 
     while (running) {
@@ -132,11 +144,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         /* --- Rendu --- */
         ImGui::Render();
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTarget, nullptr);
+        const ImVec4 clear_color = (GUI::current_theme() == AppTheme::LIGHT)
+            ? ImVec4(0.92f, 0.92f, 0.94f, 1.00f)
+            : ImVec4(0.05f, 0.05f, 0.07f, 1.00f);
         const float clear_rgba[4] = {
             clear_color.x, clear_color.y, clear_color.z, clear_color.w
         };
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTarget, clear_rgba);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+        /* Update and render additional platform windows (multi-viewports) */
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+        }
 
         g_pSwapChain->Present(1, 0);  /* VSync on */
     }

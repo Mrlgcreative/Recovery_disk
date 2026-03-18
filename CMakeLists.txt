@@ -122,6 +122,7 @@ if(WIN32)
         src/main_gui.cpp
         src/ui/gui.cpp
         ${IMGUI_SOURCES}
+        resources/app.rc
     )
     target_include_directories(hdd_unlock_gui PRIVATE
         ${imgui_SOURCE_DIR}
@@ -130,6 +131,7 @@ if(WIN32)
     target_link_libraries(hdd_unlock_gui PRIVATE
         hdd_core
         d3d11 dxgi d3dcompiler dwmapi
+        windowscodecs ole32
     )
 
     if(MSVC)

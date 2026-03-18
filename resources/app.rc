@@ -1,0 +1,2 @@
+/* app.rc — Ressources Windows pour HDD Password Recovery Tool */
+IDI_APPICON ICON "app.ico"

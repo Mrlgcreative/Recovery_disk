@@ -20,6 +20,9 @@
 #include <deque>
 #include <cstdint>
 
+struct ID3D11Device;
+struct ID3D11ShaderResourceView;
+
 /* ==========================================================================
  *  LogEntry — entree du journal de la console integree
  * ========================================================================== */
@@ -35,6 +38,9 @@ struct LogEntry {
  *  GUI — Interface graphique principale (docking layout)
  * ========================================================================== */
 
+/* Theme clair / sombre */
+enum class AppTheme { DARK, LIGHT };
+
 class GUI {
 public:
     GUI();
@@ -47,6 +53,15 @@ public:
 
     /* Theme — appele une fois apres CreateContext */
     static void apply_theme();
+    static void apply_theme(AppTheme theme);
+    static AppTheme current_theme();
+
+    /* Logo texture (chargee depuis main_gui.cpp) */
+    static bool load_texture_from_file(const char* path,
+                                       ID3D11Device* device,
+                                       ID3D11ShaderResourceView** out_srv,
+                                       int* out_w, int* out_h);
+    static void set_logo_texture(ID3D11ShaderResourceView* srv, int w, int h);
 
 private:
 
@@ -117,6 +132,14 @@ private:
     /* ----- Status bar ----- */
     std::string status_msg_;
     float       status_timer_ = 0.0f;
+
+    /* ----- Theme ----- */
+    static inline AppTheme theme_ = AppTheme::DARK;
+
+    /* ----- Logo texture ----- */
+    static inline ID3D11ShaderResourceView* logo_srv_ = nullptr;
+    static inline int logo_w_ = 0;
+    static inline int logo_h_ = 0;
 
     /* ----- Helpers ----- */
     static const char* security_label(uint16_t status);
