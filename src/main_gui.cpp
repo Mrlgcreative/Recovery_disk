@@ -6,8 +6,8 @@
  * Setup :
  *   1. Fenetre Win32 native
  *   2. Contexte DirectX 11
- *   3. Dear ImGui (Win32 + DX11 backends)
- *   4. Boucle de rendu appelant les panels GUI
+ *   3. Dear ImGui (Win32 + DX11 backends) avec Docking
+ *   4. Boucle de rendu appelant GUI::render_frame()
  *
  * Pour compiler : necessite d3d11.lib, dxgi.lib (linkage dans CMakeLists)
  * --------------------------------------------------------------------------
@@ -63,9 +63,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
 
     HWND hwnd = CreateWindowExA(
         0, wc.lpszClassName,
-        "HDD Password Recovery Tool v0.1.0",
+        "HDD Password Recovery Tool v1.0.0",
         WS_OVERLAPPEDWINDOW,
-        100, 100, 1280, 800,
+        100, 100, 1400, 850,
         nullptr, nullptr, hInstance, nullptr);
 
     /* -- DirectX 11 -- */
@@ -83,26 +83,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-    /* Theme sombre personnalise */
-    ImGui::StyleColorsDark();
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.WindowRounding   = 4.0f;
-    style.FrameRounding    = 3.0f;
-    style.GrabRounding     = 3.0f;
-    style.ScrollbarRounding = 3.0f;
+    /* Ne pas creer de imgui.ini pour forcer notre layout au prochain lancement */
+    io.IniFilename = "imgui.ini";
 
-    /* Couleurs personnalisees */
-    ImVec4* colors = style.Colors;
-    colors[ImGuiCol_WindowBg]     = ImVec4(0.10f, 0.10f, 0.12f, 1.00f);
-    colors[ImGuiCol_Header]       = ImVec4(0.20f, 0.20f, 0.30f, 1.00f);
-    colors[ImGuiCol_HeaderHovered]= ImVec4(0.30f, 0.30f, 0.45f, 1.00f);
-    colors[ImGuiCol_HeaderActive] = ImVec4(0.25f, 0.25f, 0.40f, 1.00f);
-    colors[ImGuiCol_TitleBg]      = ImVec4(0.08f, 0.08f, 0.10f, 1.00f);
-    colors[ImGuiCol_TitleBgActive]= ImVec4(0.15f, 0.15f, 0.20f, 1.00f);
-    colors[ImGuiCol_Button]       = ImVec4(0.20f, 0.25f, 0.40f, 1.00f);
-    colors[ImGuiCol_ButtonHovered]= ImVec4(0.30f, 0.35f, 0.55f, 1.00f);
-    colors[ImGuiCol_ButtonActive] = ImVec4(0.25f, 0.30f, 0.50f, 1.00f);
+    /* Theme personnalise */
+    GUI::apply_theme();
+
+    /* Ajuster la taille de police par defaut */
+    io.FontGlobalScale = 1.0f;
 
     /* Backends */
     ImGui_ImplWin32_Init(hwnd);
@@ -115,7 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
     gui.do_scan();
 
     /* -- Boucle de rendu -- */
-    const ImVec4 clear_color(0.06f, 0.06f, 0.08f, 1.00f);
+    const ImVec4 clear_color(0.05f, 0.05f, 0.07f, 1.00f);
     bool running = true;
 
     while (running) {
@@ -135,17 +126,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        /* --- Docking / Layout --- */
-        /* On utilise un DockSpace implicite avec les fenetres ImGui flottantes.
-         * Les panels se positionnent automatiquement. */
-
-        gui.draw_menu_bar();
-        gui.draw_device_list();
-        gui.draw_device_details();
-        gui.draw_security_panel();
-        gui.draw_hex_viewer();
-        gui.draw_unlock_panel();
-        gui.draw_status_bar();
+        /* Rendu de tous les panels */
+        gui.render_frame();
 
         /* --- Rendu --- */
         ImGui::Render();

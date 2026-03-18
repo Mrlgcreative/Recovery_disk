@@ -1,0 +1,32 @@
+HDD Password Recovery Tool
+Copyright (c) 2026 — Tous droits reserves.
+
+LICENCE D'UTILISATION
+
+Ce logiciel est fourni a titre d'outil de diagnostic uniquement.
+Il est destine a la recuperation de mots de passe ATA sur des disques
+durs dont l'utilisateur est le proprietaire legitime.
+
+CONDITIONS :
+
+1. USAGE AUTORISE
+   - Diagnostic et recuperation de mots de passe sur vos propres disques
+   - Utilisation dans un cadre professionnel de reparation informatique
+   - Usage educatif et recherche en securite
+
+2. USAGE INTERDIT
+   - Acces non autorise a des disques ne vous appartenant pas
+   - Contournement de protections dans un but malveillant
+   - Distribution commerciale sans autorisation ecrite
+
+3. ABSENCE DE GARANTIE
+   Ce logiciel est fourni "EN L'ETAT", sans garantie d'aucune sorte,
+   expresse ou implicite. L'auteur ne saurait etre tenu responsable
+   de tout dommage resultant de l'utilisation de ce logiciel.
+
+4. RESPONSABILITE
+   L'utilisateur est seul responsable de l'utilisation qu'il fait
+   de ce logiciel et doit s'assurer de respecter la legislation
+   en vigueur dans son pays.
+
+En installant ce logiciel, vous acceptez les termes de cette licence.

@@ -1,28 +1,72 @@
 /*
  * gui.cpp
  * --------------------------------------------------------------------------
- * Implementation de l'interface graphique Dear ImGui.
+ * Implementation de l'interface graphique Dear ImGui — docking layout.
  *
- * Tous les panels sont dessines en immediate-mode :
- *   - Liste des disques (tableau interactif)
- *   - Details du disque selectionne
- *   - Analyse de securite ATA (flags colores)
- *   - Hex viewer pour IDENTIFY DEVICE brut
- *   - Panel de deverrouillage (futur sprint)
+ * Panels :
+ *   - Disques         : liste cliquable + scan
+ *   - Details         : infos du disque selectionne
+ *   - Securite ATA    : flags colores, verdict
+ *   - Hex Viewer      : dump IDENTIFY brut 512 bytes
+ *   - Constructeur    : detection vendor (VSC)
+ *   - Deverrouillage  : workflow RAM patch / password
+ *   - Backup SA       : sauvegarde Service Area
+ *   - Mots de passe   : extraction passwords SA
+ *   - Console         : journal des evenements
+ *   - Status bar      : message en bas
  * --------------------------------------------------------------------------
  */
 
 #include "gui.h"
-#include "cli.h"  /* DeviceScanner */
+#include "cli.h"
+#include "vsc_engine.h"
+#include "ram_patcher.h"
+#include "sa_backup.h"
+#include "device.h"
+#include "config.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"   /* DockBuilder API */
 
 #include <cstdio>
 #include <cstring>
+#include <ctime>
+#include <algorithm>
+
+/* ==========================================================================
+ *  Constructeur
+ * ========================================================================== */
+
+GUI::GUI() {
+    log_msg(LogEntry::LVL_INFO, "HDD Password Recovery Tool v1.0.0");
+    log_msg(LogEntry::LVL_INFO, "Interface graphique initialisee.");
+}
 
 /* ==========================================================================
  *  Helpers
  * ========================================================================== */
+
+static const char* timestamp_now() {
+    static char buf[16];
+    time_t t = time(nullptr);
+    struct tm lt{};
+#ifdef _WIN32
+    localtime_s(&lt, &t);
+#else
+    localtime_r(&t, &lt);
+#endif
+    snprintf(buf, sizeof(buf), "%02d:%02d:%02d", lt.tm_hour, lt.tm_min, lt.tm_sec);
+    return buf;
+}
+
+void GUI::log_msg(LogEntry::Level lvl, const std::string& msg) {
+    LogEntry e;
+    e.level     = lvl;
+    e.message   = msg;
+    e.timestamp = timestamp_now();
+    log_.push_back(std::move(e));
+    if (log_.size() > 500) log_.pop_front();
+}
 
 const char* GUI::security_label(uint16_t s) {
     if (SEC_IS_LOCKED(s))                     return "LOCKED";
@@ -41,14 +85,123 @@ void GUI::security_color(uint16_t s, float rgb[3]) {
 }
 
 /* ==========================================================================
+ *  Theme
+ * ========================================================================== */
+
+void GUI::apply_theme() {
+    ImGuiStyle& s = ImGui::GetStyle();
+
+    /* Geometry */
+    s.WindowRounding    = 4.0f;
+    s.FrameRounding     = 3.0f;
+    s.GrabRounding      = 3.0f;
+    s.ScrollbarRounding = 4.0f;
+    s.TabRounding       = 3.0f;
+    s.ChildRounding     = 3.0f;
+    s.PopupRounding     = 4.0f;
+    s.WindowPadding     = ImVec2(10, 10);
+    s.FramePadding      = ImVec2(8, 4);
+    s.ItemSpacing       = ImVec2(8, 6);
+    s.ScrollbarSize     = 14.0f;
+    s.GrabMinSize       = 12.0f;
+    s.WindowBorderSize  = 1.0f;
+    s.FrameBorderSize   = 0.0f;
+    s.TabBorderSize     = 0.0f;
+
+    ImVec4* c = s.Colors;
+
+    /* Background */
+    c[ImGuiCol_WindowBg]             = ImVec4(0.09f, 0.09f, 0.12f, 1.00f);
+    c[ImGuiCol_ChildBg]              = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    c[ImGuiCol_PopupBg]              = ImVec4(0.11f, 0.11f, 0.15f, 0.96f);
+
+    /* Borders */
+    c[ImGuiCol_Border]               = ImVec4(0.20f, 0.22f, 0.30f, 0.60f);
+    c[ImGuiCol_BorderShadow]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+    /* Frame */
+    c[ImGuiCol_FrameBg]              = ImVec4(0.14f, 0.14f, 0.19f, 1.00f);
+    c[ImGuiCol_FrameBgHovered]       = ImVec4(0.18f, 0.18f, 0.25f, 1.00f);
+    c[ImGuiCol_FrameBgActive]        = ImVec4(0.22f, 0.22f, 0.30f, 1.00f);
+
+    /* Title */
+    c[ImGuiCol_TitleBg]              = ImVec4(0.07f, 0.07f, 0.10f, 1.00f);
+    c[ImGuiCol_TitleBgActive]        = ImVec4(0.10f, 0.12f, 0.18f, 1.00f);
+    c[ImGuiCol_TitleBgCollapsed]     = ImVec4(0.07f, 0.07f, 0.10f, 0.60f);
+
+    /* Tabs */
+    c[ImGuiCol_Tab]                  = ImVec4(0.12f, 0.12f, 0.17f, 1.00f);
+    c[ImGuiCol_TabHovered]           = ImVec4(0.22f, 0.28f, 0.45f, 1.00f);
+    c[ImGuiCol_TabSelected]          = ImVec4(0.18f, 0.22f, 0.36f, 1.00f);
+    c[ImGuiCol_TabDimmed]            = ImVec4(0.10f, 0.10f, 0.14f, 1.00f);
+    c[ImGuiCol_TabDimmedSelected]    = ImVec4(0.14f, 0.16f, 0.24f, 1.00f);
+
+    /* Header (collapsing, selectable) */
+    c[ImGuiCol_Header]               = ImVec4(0.16f, 0.18f, 0.28f, 1.00f);
+    c[ImGuiCol_HeaderHovered]        = ImVec4(0.22f, 0.26f, 0.40f, 1.00f);
+    c[ImGuiCol_HeaderActive]         = ImVec4(0.20f, 0.24f, 0.38f, 1.00f);
+
+    /* Buttons */
+    c[ImGuiCol_Button]               = ImVec4(0.16f, 0.20f, 0.34f, 1.00f);
+    c[ImGuiCol_ButtonHovered]        = ImVec4(0.24f, 0.30f, 0.50f, 1.00f);
+    c[ImGuiCol_ButtonActive]         = ImVec4(0.20f, 0.26f, 0.44f, 1.00f);
+
+    /* Separator */
+    c[ImGuiCol_Separator]            = ImVec4(0.22f, 0.24f, 0.32f, 0.60f);
+    c[ImGuiCol_SeparatorHovered]     = ImVec4(0.30f, 0.40f, 0.64f, 1.00f);
+    c[ImGuiCol_SeparatorActive]      = ImVec4(0.36f, 0.46f, 0.72f, 1.00f);
+
+    /* Resize grip */
+    c[ImGuiCol_ResizeGrip]           = ImVec4(0.22f, 0.28f, 0.44f, 0.40f);
+    c[ImGuiCol_ResizeGripHovered]    = ImVec4(0.30f, 0.38f, 0.60f, 0.70f);
+    c[ImGuiCol_ResizeGripActive]     = ImVec4(0.36f, 0.44f, 0.68f, 0.90f);
+
+    /* Scrollbar */
+    c[ImGuiCol_ScrollbarBg]          = ImVec4(0.08f, 0.08f, 0.10f, 0.60f);
+    c[ImGuiCol_ScrollbarGrab]        = ImVec4(0.22f, 0.24f, 0.32f, 1.00f);
+    c[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.28f, 0.30f, 0.40f, 1.00f);
+    c[ImGuiCol_ScrollbarGrabActive]  = ImVec4(0.34f, 0.36f, 0.48f, 1.00f);
+
+    /* Checkmark, slider */
+    c[ImGuiCol_CheckMark]            = ImVec4(0.40f, 0.60f, 1.00f, 1.00f);
+    c[ImGuiCol_SliderGrab]           = ImVec4(0.30f, 0.44f, 0.80f, 1.00f);
+    c[ImGuiCol_SliderGrabActive]     = ImVec4(0.36f, 0.50f, 0.90f, 1.00f);
+
+    /* Text */
+    c[ImGuiCol_Text]                 = ImVec4(0.88f, 0.90f, 0.95f, 1.00f);
+    c[ImGuiCol_TextDisabled]         = ImVec4(0.42f, 0.44f, 0.50f, 1.00f);
+
+    /* Docking */
+    c[ImGuiCol_DockingPreview]       = ImVec4(0.24f, 0.36f, 0.64f, 0.70f);
+    c[ImGuiCol_DockingEmptyBg]       = ImVec4(0.06f, 0.06f, 0.08f, 1.00f);
+
+    /* MenuBar */
+    c[ImGuiCol_MenuBarBg]            = ImVec4(0.10f, 0.10f, 0.14f, 1.00f);
+
+    /* Table */
+    c[ImGuiCol_TableHeaderBg]        = ImVec4(0.14f, 0.16f, 0.22f, 1.00f);
+    c[ImGuiCol_TableBorderStrong]    = ImVec4(0.20f, 0.22f, 0.30f, 1.00f);
+    c[ImGuiCol_TableBorderLight]     = ImVec4(0.16f, 0.18f, 0.24f, 0.60f);
+    c[ImGuiCol_TableRowBg]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    c[ImGuiCol_TableRowBgAlt]        = ImVec4(0.10f, 0.10f, 0.14f, 0.40f);
+}
+
+/* ==========================================================================
  *  Actions
  * ========================================================================== */
 
 void GUI::do_scan() {
+    log_msg(LogEntry::LVL_INFO, "Scan des disques physiques...");
     auto paths = DeviceScanner::scan();
+
     devices_.clear();
     selected_ = -1;
     hex_valid_ = false;
+    vendor_detected_ = false;
+    vendor_name_.clear();
+    unlock_state_ = UnlockState::IDLE;
+    backup_done_ = false;
+    passwords_extracted_ = false;
 
     for (const auto& p : paths) {
         DeviceInfo info{};
@@ -57,14 +210,14 @@ void GUI::do_scan() {
     }
 
     scan_done_ = true;
-
     if (!devices_.empty())
         selected_ = 0;
 
     char msg[128];
     snprintf(msg, sizeof(msg), "%zu disque(s) detecte(s).", devices_.size());
+    log_msg(devices_.empty() ? LogEntry::LVL_WARN : LogEntry::LVL_OK, msg);
     status_msg_ = msg;
-    status_timer_ = 3.0f;
+    status_timer_ = 4.0f;
 }
 
 void GUI::do_identify_raw() {
@@ -72,158 +225,510 @@ void GUI::do_identify_raw() {
     if (selected_ < 0) return;
 
     const auto& dev = devices_[selected_];
+    log_msg(LogEntry::LVL_INFO, std::string("IDENTIFY DEVICE sur ") + dev.path);
+
     ATAHandle h(ATAInterface::create());
     ATAError err = h.open(dev.path);
     if (err != ATAError::OK) {
-        status_msg_ = "Erreur: impossible d'ouvrir le disque.";
-        status_timer_ = 3.0f;
+        log_msg(LogEntry::LVL_ERR, std::string("Erreur ouverture : ") + ata_error_str(err));
         return;
     }
 
     IdentifyData id{};
     err = h->identify_device(id);
     if (err != ATAError::OK) {
-        status_msg_ = "IDENTIFY DEVICE echoue (disque peut-etre verrouille).";
-        status_timer_ = 3.0f;
+        log_msg(LogEntry::LVL_ERR, "IDENTIFY DEVICE echoue (disque peut-etre verrouille).");
         return;
     }
 
     std::memcpy(hex_data_, &id, 512);
     hex_valid_ = true;
-    show_hex_viewer_ = true;
+    show_hex_  = true;
+    log_msg(LogEntry::LVL_OK, "IDENTIFY DEVICE lu avec succes (512 bytes).");
+}
+
+void GUI::do_detect_vendor() {
+    vendor_detected_ = false;
+    vendor_name_.clear();
+    if (selected_ < 0) return;
+
+    const auto& dev = devices_[selected_];
+    log_msg(LogEntry::LVL_INFO, std::string("Detection constructeur pour ") + dev.model);
+
+    ATAHandle h(ATAInterface::create());
+    ATAError err = h.open(dev.path);
+    if (err != ATAError::OK) {
+        log_msg(LogEntry::LVL_ERR, std::string("Erreur ouverture : ") + ata_error_str(err));
+        return;
+    }
+
+    IdentifyData id{};
+    err = h->identify_device(id);
+    if (err != ATAError::OK) {
+        log_msg(LogEntry::LVL_ERR, "IDENTIFY DEVICE echoue.");
+        return;
+    }
+
+    VSCEngine engine(h.get());
+    auto handler = engine.detect_vendor(id);
+
+    if (handler) {
+        vendor_detected_ = true;
+        vendor_name_ = handler->vendor_name();
+        log_msg(LogEntry::LVL_OK, "Constructeur detecte : " + vendor_name_);
+    } else {
+        log_msg(LogEntry::LVL_WARN, "Constructeur non reconnu — commandes VSC indisponibles.");
+    }
+}
+
+void GUI::do_unlock() {
+    unlock_state_ = UnlockState::IDLE;
+    unlock_msg_.clear();
+    if (selected_ < 0) return;
+
+    const auto& dev = devices_[selected_];
+    log_msg(LogEntry::LVL_INFO, std::string("Tentative de deverrouillage : ") + dev.model);
+
+    ATAHandle h(ATAInterface::create());
+    ATAError err = h.open(dev.path);
+    if (err != ATAError::OK) {
+        unlock_state_ = UnlockState::FAILED;
+        unlock_msg_ = std::string("Erreur ouverture : ") + ata_error_str(err);
+        log_msg(LogEntry::LVL_ERR, unlock_msg_);
+        return;
+    }
+
+    IdentifyData id{};
+    h->identify_device(id);
+
+    Device device(h.get());
+    device.set_identify(id);
+
+    VSCEngine engine(h.get());
+    RAMPatcher patcher(h.get(), engine);
+    UnlockResult result = patcher.attempt_unlock(device);
+
+    unlock_msg_ = unlock_result_str(result);
+    backup_path_ = patcher.last_backup_path();
+    password_info_ = patcher.last_password_info();
+
+    if (result == UnlockResult::SUCCESS || result == UnlockResult::PASSWORD_UNLOCK) {
+        unlock_state_ = UnlockState::SUCCESS;
+        log_msg(LogEntry::LVL_OK, "Deverrouillage REUSSI : " + unlock_msg_);
+        if (!backup_path_.empty()) {
+            backup_done_ = true;
+            log_msg(LogEntry::LVL_INFO, "Backup SA : " + backup_path_);
+        }
+        if (password_info_.found) {
+            passwords_extracted_ = true;
+            log_msg(LogEntry::LVL_OK, "Mots de passe SA extraits.");
+        }
+    } else {
+        unlock_state_ = UnlockState::FAILED;
+        log_msg(LogEntry::LVL_ERR, "Deverrouillage ECHOUE : " + unlock_msg_);
+    }
+}
+
+void GUI::do_backup_sa() {
+    backup_done_ = false;
+    backup_path_.clear();
+    backup_sha_.clear();
+    if (selected_ < 0) return;
+
+    const auto& dev = devices_[selected_];
+    log_msg(LogEntry::LVL_INFO, std::string("Backup SA pour ") + dev.model);
+
+    ATAHandle h(ATAInterface::create());
+    ATAError err = h.open(dev.path);
+    if (err != ATAError::OK) {
+        log_msg(LogEntry::LVL_ERR, std::string("Erreur ouverture : ") + ata_error_str(err));
+        return;
+    }
+
+    IdentifyData id{};
+    h->identify_device(id);
+
+    VSCEngine engine(h.get());
+    auto handler = engine.detect_vendor(id);
+    if (!handler) {
+        log_msg(LogEntry::LVL_ERR, "Constructeur non reconnu — backup impossible.");
+        return;
+    }
+
+    log_msg(LogEntry::LVL_INFO, std::string("Constructeur : ") + handler->vendor_name());
+
+    std::string path = SABackup::backup_sa(handler.get(), dev.serial, dev.model);
+    if (path.empty()) {
+        log_msg(LogEntry::LVL_ERR, "Backup SA echoue.");
+        return;
+    }
+
+    backup_done_ = true;
+    backup_path_ = path;
+    backup_sha_  = SABackup::sha256_file(path);
+
+    log_msg(LogEntry::LVL_OK, "Backup SA cree : " + path);
+    if (!backup_sha_.empty())
+        log_msg(LogEntry::LVL_INFO, "SHA-256 : " + backup_sha_);
+}
+
+void GUI::do_extract_passwords() {
+    passwords_extracted_ = false;
+    password_info_ = {};
+    if (selected_ < 0) return;
+
+    const auto& dev = devices_[selected_];
+    log_msg(LogEntry::LVL_INFO, std::string("Extraction mots de passe SA pour ") + dev.model);
+
+    ATAHandle h(ATAInterface::create());
+    ATAError err = h.open(dev.path);
+    if (err != ATAError::OK) {
+        log_msg(LogEntry::LVL_ERR, std::string("Erreur ouverture : ") + ata_error_str(err));
+        return;
+    }
+
+    IdentifyData id{};
+    h->identify_device(id);
+
+    VSCEngine engine(h.get());
+    auto handler = engine.detect_vendor(id);
+    if (!handler) {
+        log_msg(LogEntry::LVL_ERR, "Constructeur non reconnu — extraction impossible.");
+        return;
+    }
+
+    if (!handler->enter_vendor_mode()) {
+        log_msg(LogEntry::LVL_ERR, "Impossible d'entrer en mode vendor.");
+        return;
+    }
+    VendorModeGuard guard(handler.get());
+
+    uint8_t module_buf[512]{};
+    if (!handler->read_sa_module(WD_SA_MODULE_PASSWORD,
+                                 std::span<uint8_t>(module_buf, 512))) {
+        log_msg(LogEntry::LVL_ERR, "Lecture du module password SA echouee.");
+        return;
+    }
+
+    password_info_ = SAParser::parse_wd_password_module(module_buf, 512);
+    passwords_extracted_ = true;
+
+    if (password_info_.found) {
+        log_msg(LogEntry::LVL_OK, "Mots de passe extraits avec succes.");
+        if (password_info_.is_empty_password)
+            log_msg(LogEntry::LVL_INFO, "Note : password vide (tous zeros).");
+    } else {
+        log_msg(LogEntry::LVL_WARN, "Module password lu mais aucun password trouve.");
+    }
 }
 
 /* ==========================================================================
- *  Panels ImGui
+ *  Render Frame — appele une fois par frame
+ * ========================================================================== */
+
+void GUI::render_frame() {
+    draw_dockspace();
+    draw_menu_bar();
+    draw_device_panel();
+    draw_details_panel();
+    draw_security_panel();
+
+    if (show_hex_)     draw_hex_viewer();
+    if (show_vendor_)  draw_vendor_panel();
+    if (show_unlock_)  draw_unlock_panel();
+    if (show_backup_)  draw_backup_panel();
+    if (show_pwd_)     draw_passwords_panel();
+    if (show_log_)     draw_log_console();
+
+    draw_status_bar();
+
+    if (show_about_)   draw_about_popup();
+}
+
+/* ==========================================================================
+ *  Dockspace — layout plein ecran
+ * ========================================================================== */
+
+void GUI::draw_dockspace() {
+    ImGuiViewport* vp = ImGui::GetMainViewport();
+    float bar_h = ImGui::GetFrameHeight();
+
+    /* Fenetre invisible couvrant tout le viewport (sous la status bar) */
+    ImGui::SetNextWindowPos(vp->WorkPos);
+    ImGui::SetNextWindowSize(ImVec2(vp->WorkSize.x, vp->WorkSize.y - bar_h));
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
+        ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
+    ImGui::Begin("##DockHost", nullptr, flags);
+    ImGui::PopStyleVar(3);
+
+    ImGuiID dock_id = ImGui::GetID("MainDock");
+
+    /* Construction du layout initial (une seule fois) */
+    static bool layout_built = false;
+    if (!layout_built) {
+        layout_built = true;
+
+        ImGui::DockBuilderRemoveNode(dock_id);
+        ImGui::DockBuilderAddNode(dock_id, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dock_id, ImVec2(vp->WorkSize.x, vp->WorkSize.y - bar_h));
+
+        /* Split : gauche 22% | reste */
+        ImGuiID dock_left, dock_main;
+        ImGui::DockBuilderSplitNode(dock_id, ImGuiDir_Left, 0.22f, &dock_left, &dock_main);
+
+        /* Split reste : centre | droite 32% */
+        ImGuiID dock_center, dock_right;
+        ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Right, 0.35f, &dock_right, &dock_center);
+
+        /* Split centre : haut | bas 28% (console) */
+        ImGuiID dock_center_top, dock_bottom;
+        ImGui::DockBuilderSplitNode(dock_center, ImGuiDir_Down, 0.28f, &dock_bottom, &dock_center_top);
+
+        /* Assigner les panels */
+        ImGui::DockBuilderDockWindow("Disques",           dock_left);
+        ImGui::DockBuilderDockWindow("Details",           dock_center_top);
+        ImGui::DockBuilderDockWindow("Securite ATA",      dock_center_top);
+        ImGui::DockBuilderDockWindow("Hex Viewer",        dock_center_top);
+        ImGui::DockBuilderDockWindow("Constructeur",      dock_right);
+        ImGui::DockBuilderDockWindow("Deverrouillage",    dock_right);
+        ImGui::DockBuilderDockWindow("Backup SA",         dock_right);
+        ImGui::DockBuilderDockWindow("Mots de passe SA",  dock_right);
+        ImGui::DockBuilderDockWindow("Console",           dock_bottom);
+
+        ImGui::DockBuilderFinish(dock_id);
+    }
+
+    ImGui::DockSpace(dock_id, ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::End();
+}
+
+/* ==========================================================================
+ *  Menu Bar
  * ========================================================================== */
 
 void GUI::draw_menu_bar() {
-    if (ImGui::BeginMainMenuBar()) {
-        if (ImGui::BeginMenu("Fichier")) {
-            if (ImGui::MenuItem("Scanner les disques", "F5"))
-                do_scan();
-            ImGui::Separator();
-            if (ImGui::MenuItem("Quitter", "Alt+F4"))
-                std::exit(0);
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Affichage")) {
-            ImGui::MenuItem("Hex Viewer", nullptr, &show_hex_viewer_);
-            ImGui::EndMenu();
-        }
-        ImGui::EndMainMenuBar();
+    if (!ImGui::BeginMainMenuBar()) return;
+
+    if (ImGui::BeginMenu("Fichier")) {
+        if (ImGui::MenuItem("Scanner les disques", "F5"))
+            do_scan();
+        ImGui::Separator();
+        if (ImGui::MenuItem("Quitter", "Alt+F4"))
+            std::exit(0);
+        ImGui::EndMenu();
     }
+
+    if (ImGui::BeginMenu("Affichage")) {
+        ImGui::MenuItem("Hex Viewer",        nullptr, &show_hex_);
+        ImGui::MenuItem("Constructeur",      nullptr, &show_vendor_);
+        ImGui::MenuItem("Deverrouillage",    nullptr, &show_unlock_);
+        ImGui::MenuItem("Backup SA",         nullptr, &show_backup_);
+        ImGui::MenuItem("Mots de passe SA",  nullptr, &show_pwd_);
+        ImGui::Separator();
+        ImGui::MenuItem("Console",           nullptr, &show_log_);
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Aide")) {
+        if (ImGui::MenuItem("A propos..."))
+            show_about_ = true;
+        ImGui::EndMenu();
+    }
+
+    /* Indicateur droite */
+    float w = ImGui::GetWindowWidth();
+    char ind[64];
+    snprintf(ind, sizeof(ind), "%zu disque(s)  |  %s",
+             devices_.size(), selected_ >= 0 ? devices_[selected_].model : "---");
+    float tw = ImGui::CalcTextSize(ind).x;
+    ImGui::SameLine(w - tw - 16.0f);
+    ImGui::TextDisabled("%s", ind);
+
+    ImGui::EndMainMenuBar();
 }
 
-void GUI::draw_device_list() {
-    ImGui::Begin("Disques detectes", nullptr, ImGuiWindowFlags_NoCollapse);
+/* ==========================================================================
+ *  Panel : Liste des disques (sidebar gauche)
+ * ========================================================================== */
 
-    if (ImGui::Button("Scanner (F5)")) do_scan();
-    ImGui::SameLine();
-    ImGui::Text("%zu disque(s)", devices_.size());
+void GUI::draw_device_panel() {
+    ImGui::Begin("Disques");
 
+    /* Bouton scan */
+    float avail = ImGui::GetContentRegionAvail().x;
+    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.15f, 0.30f, 0.55f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4(0.20f, 0.40f, 0.70f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4(0.18f, 0.36f, 0.62f, 1.0f));
+    if (ImGui::Button("Scanner (F5)", ImVec2(avail, 0)))
+        do_scan();
+    ImGui::PopStyleColor(3);
+
+    ImGui::Spacing();
     ImGui::Separator();
+    ImGui::Spacing();
 
-    if (!devices_.empty() &&
-        ImGui::BeginTable("##devices", 5,
-            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
-            ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY,
-            ImVec2(0, 0)))
-    {
-        ImGui::TableSetupColumn("#",        ImGuiTableColumnFlags_WidthFixed, 30.0f);
-        ImGui::TableSetupColumn("Modele",   ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Serial",   ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Firmware", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-        ImGui::TableSetupColumn("Securite", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-        ImGui::TableHeadersRow();
+    if (!scan_done_) {
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1),
+            "Cliquez sur Scanner pour\ndecouvrir les disques.");
+        ImGui::End();
+        return;
+    }
 
-        for (int i = 0; i < static_cast<int>(devices_.size()); ++i) {
-            const auto& d = devices_[i];
-            ImGui::TableNextRow();
+    if (devices_.empty()) {
+        ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "Aucun disque detecte.");
+        ImGui::TextWrapped("Verifiez les droits Administrateur.");
+        ImGui::End();
+        return;
+    }
 
-            /* Colonne # */
-            ImGui::TableSetColumnIndex(0);
-            char label[16];
-            snprintf(label, sizeof(label), "%d", i);
-            bool is_sel = (selected_ == i);
-            if (ImGui::Selectable(label, is_sel,
-                    ImGuiSelectableFlags_SpanAllColumns)) {
-                selected_ = i;
-                hex_valid_ = false;
-            }
+    /* Liste des disques sous forme de cartes */
+    for (int i = 0; i < static_cast<int>(devices_.size()); ++i) {
+        const auto& d = devices_[i];
+        bool is_sel = (selected_ == i);
 
-            /* Colonne Modele */
-            ImGui::TableSetColumnIndex(1);
-            ImGui::TextUnformatted(d.model);
-
-            /* Colonne Serial */
-            ImGui::TableSetColumnIndex(2);
-            ImGui::TextUnformatted(d.serial);
-
-            /* Colonne Firmware */
-            ImGui::TableSetColumnIndex(3);
-            ImGui::TextUnformatted(d.firmware);
-
-            /* Colonne Securite */
-            ImGui::TableSetColumnIndex(4);
-            float rgb[3];
-            security_color(d.security_status, rgb);
-            ImGui::TextColored(ImVec4(rgb[0], rgb[1], rgb[2], 1.0f),
-                               "%s", security_label(d.security_status));
+        /* Couleur de fond selon selection */
+        if (is_sel) {
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.16f, 0.20f, 0.32f, 1.0f));
+        } else {
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.11f, 0.11f, 0.15f, 1.0f));
         }
 
-        ImGui::EndTable();
-    }
-    else if (devices_.empty() && scan_done_) {
-        ImGui::TextColored(ImVec4(1,0.3f,0.3f,1),
-            "Aucun disque detecte.");
-        ImGui::Text("Verifiez les droits Administrateur.");
-    }
-    else if (!scan_done_) {
-        ImGui::Text("Cliquez sur 'Scanner' pour detecter les disques.");
+        char child_id[32];
+        snprintf(child_id, sizeof(child_id), "##dev%d", i);
+        ImGui::BeginChild(child_id, ImVec2(avail, 80), ImGuiChildFlags_Borders);
+
+        /* Zone cliquable invisible */
+        ImVec2 cpos = ImGui::GetCursorScreenPos();
+        ImVec2 csize = ImGui::GetContentRegionAvail();
+        if (ImGui::InvisibleButton(child_id, csize)) {
+            selected_ = i;
+            hex_valid_ = false;
+            vendor_detected_ = false;
+            unlock_state_ = UnlockState::IDLE;
+            backup_done_ = false;
+            passwords_extracted_ = false;
+        }
+        ImGui::SetCursorScreenPos(cpos);
+
+        /* Indicateur securite */
+        float rgb[3];
+        security_color(d.security_status, rgb);
+        ImGui::TextColored(ImVec4(rgb[0], rgb[1], rgb[2], 1),
+                           "[%s]", security_label(d.security_status));
+        ImGui::SameLine();
+        ImGui::Text("Disque %d", i);
+
+        /* Modele */
+        ImGui::TextColored(ImVec4(0.75f, 0.82f, 0.95f, 1), "%s", d.model);
+
+        /* Serial + Firmware */
+        ImGui::TextDisabled("S/N: %s  |  FW: %s", d.serial, d.firmware);
+
+        ImGui::EndChild();
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
     }
 
     ImGui::End();
 }
 
-void GUI::draw_device_details() {
-    ImGui::Begin("Details du disque", nullptr, ImGuiWindowFlags_NoCollapse);
+/* ==========================================================================
+ *  Panel : Details du disque
+ * ========================================================================== */
+
+void GUI::draw_details_panel() {
+    ImGui::Begin("Details");
 
     if (selected_ < 0) {
         ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1),
-            "Selectionnez un disque dans la liste.");
+            "Selectionnez un disque dans le panel de gauche.");
         ImGui::End();
         return;
     }
 
     const auto& d = devices_[selected_];
 
-    ImGui::Text("Chemin   : %s", d.path);
-    ImGui::Text("Modele   : %s", d.model);
-    ImGui::Text("Serial   : %s", d.serial);
-    ImGui::Text("Firmware : %s", d.firmware);
-
+    /* En-tete */
+    ImGui::TextColored(ImVec4(0.55f, 0.70f, 1.0f, 1), "%s", d.model);
     ImGui::Separator();
+    ImGui::Spacing();
 
-    char sec_str[64];
-    ata_security_status_str(d.security_status, sec_str);
-    ImGui::Text("Securite : %s (word 128 = 0x%04X)", sec_str, d.security_status);
+    /* Tableau d'infos */
+    if (ImGui::BeginTable("##devinfo", 2, ImGuiTableFlags_None)) {
+        ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 
-    ImGui::Separator();
+        auto row = [](const char* label, const char* fmt, auto... args) {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextDisabled("%s", label);
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text(fmt, args...);
+        };
 
-    if (ImGui::Button("Lire IDENTIFY brut")) {
-        do_identify_raw();
+        row("Chemin",    "%s", d.path);
+        row("Modele",    "%s", d.model);
+        row("N. Serie",  "%s", d.serial);
+        row("Firmware",  "%s", d.firmware);
+
+        /* Taille */
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextDisabled("Taille");
+        ImGui::TableSetColumnIndex(1);
+        if (d.size_sectors > 0) {
+            double gb = static_cast<double>(d.size_sectors) * 512.0 / (1024.0*1024.0*1024.0);
+            ImGui::Text("%.1f Go  (%llu secteurs)",
+                        gb, static_cast<unsigned long long>(d.size_sectors));
+        } else {
+            ImGui::TextDisabled("N/A");
+        }
+
+        /* Security status brut */
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextDisabled("Security (w128)");
+        ImGui::TableSetColumnIndex(1);
+        float rgb[3];
+        security_color(d.security_status, rgb);
+        ImGui::TextColored(ImVec4(rgb[0], rgb[1], rgb[2], 1),
+                           "%s  (0x%04X)", security_label(d.security_status), d.security_status);
+
+        ImGui::EndTable();
     }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    /* Boutons d'action */
+    if (ImGui::Button("Lire IDENTIFY brut"))
+        do_identify_raw();
+    ImGui::SameLine();
+    if (ImGui::Button("Detecter constructeur"))
+        do_detect_vendor();
 
     ImGui::End();
 }
 
+/* ==========================================================================
+ *  Panel : Analyse de securite ATA
+ * ========================================================================== */
+
 void GUI::draw_security_panel() {
-    ImGui::Begin("Analyse de securite ATA", nullptr, ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin("Securite ATA");
 
     if (selected_ < 0) {
-        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1),
-            "Selectionnez un disque.");
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1), "Selectionnez un disque.");
         ImGui::End();
         return;
     }
@@ -231,17 +736,14 @@ void GUI::draw_security_panel() {
     const auto& d = devices_[selected_];
     uint16_t s = d.security_status;
 
-    ImGui::Text("Disque : %s", d.model);
+    ImGui::TextColored(ImVec4(0.55f, 0.70f, 1.0f, 1), "%s", d.model);
     ImGui::Text("Word 128 brut : 0x%04X", s);
-
+    ImGui::Spacing();
     ImGui::Separator();
+    ImGui::Spacing();
 
-    /* Flags individuels avec icones couleur */
-    struct FlagEntry {
-        const char* name;
-        uint16_t    mask;
-        const char* desc;
-    };
+    /* Flags individuels */
+    struct FlagEntry { const char* name; uint16_t mask; const char* desc; };
     static const FlagEntry flags[] = {
         {"SUPPORTED",      SEC_FLAG_SUPPORTED,      "Security Feature Set disponible"},
         {"ENABLED",        SEC_FLAG_ENABLED,        "Un password est defini"},
@@ -253,115 +755,445 @@ void GUI::draw_security_panel() {
 
     for (const auto& f : flags) {
         bool active = (s & f.mask) != 0;
-        ImVec4 col = active ? ImVec4(0.2f, 0.9f, 0.2f, 1) : ImVec4(0.5f, 0.5f, 0.5f, 1);
+        ImVec4 col = active
+            ? ImVec4(0.30f, 0.90f, 0.40f, 1)
+            : ImVec4(0.40f, 0.40f, 0.45f, 1);
 
-        ImGui::TextColored(col, "[%s]", active ? "X" : " ");
+        ImGui::TextColored(col, active ? "[X]" : "[ ]");
         ImGui::SameLine();
-        ImGui::Text("%-18s %s", f.name, f.desc);
+        ImGui::Text("%-18s", f.name);
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", f.desc);
     }
 
+    ImGui::Spacing();
     ImGui::Separator();
+    ImGui::Spacing();
 
     /* Verdict */
     ImGui::Text("Verdict :");
     ImGui::SameLine();
 
     if (!(s & SEC_FLAG_SUPPORTED)) {
-        ImGui::TextColored(ImVec4(0.2f,0.8f,0.2f,1),
+        ImGui::TextColored(ImVec4(0.3f,0.85f,0.3f,1),
             "Pas de securite ATA sur ce disque.");
     } else if (SEC_IS_EXPIRED(s)) {
         ImGui::TextColored(ImVec4(1,0.2f,0.2f,1),
-            "BLOQUE - Compteur de tentatives expire. Power cycle requis.");
+            "BLOQUE — Compteur de tentatives expire. Power cycle requis.");
     } else if (SEC_IS_LOCKED(s) && SEC_IS_FROZEN(s)) {
         ImGui::TextColored(ImVec4(1,0.2f,0.2f,1),
-            "VERROUILLE + GELE - Suspend-to-RAM ou hot-swap necessaire.");
+            "VERROUILLE + GELE — Suspend-to-RAM ou hot-swap necessaire.");
     } else if (SEC_IS_LOCKED(s)) {
-        ImGui::TextColored(ImVec4(1,0.2f,0.2f,1),
-            "VERROUILLE - Password requis pour deverrouillage.");
+        ImGui::TextColored(ImVec4(1,0.3f,0.3f,1),
+            "VERROUILLE — Password requis pour deverrouillage.");
     } else if (SEC_IS_FROZEN(s)) {
         ImGui::TextColored(ImVec4(1,0.8f,0,1),
-            "GELE - Suspend-to-RAM pour degeler.");
+            "GELE — Suspend-to-RAM pour degeler.");
     } else if (SEC_IS_ENABLED(s)) {
         ImGui::TextColored(ImVec4(0.8f,0.4f,0.8f,1),
             "PASSWORD ACTIF mais disque non verrouille.");
     } else {
-        ImGui::TextColored(ImVec4(0.2f,0.8f,0.2f,1),
+        ImGui::TextColored(ImVec4(0.3f,0.85f,0.3f,1),
             "Securite supportee, aucun password actif.");
     }
 
     ImGui::End();
 }
 
-void GUI::draw_hex_viewer() {
-    if (!show_hex_viewer_) return;
+/* ==========================================================================
+ *  Panel : Hex Viewer (IDENTIFY DEVICE brut)
+ * ========================================================================== */
 
-    ImGui::Begin("IDENTIFY DEVICE - Hex Viewer", &show_hex_viewer_);
+void GUI::draw_hex_viewer() {
+    ImGui::Begin("Hex Viewer", &show_hex_);
 
     if (!hex_valid_) {
-        ImGui::TextColored(ImVec4(0.5f,0.5f,0.5f,1),
-            "Appuyez sur 'Lire IDENTIFY brut' dans les Details.");
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1),
+            "Appuyez sur 'Lire IDENTIFY brut' dans le panel Details.");
         ImGui::End();
         return;
     }
 
+    ImGui::TextDisabled("IDENTIFY DEVICE — 512 bytes (256 words)");
+    ImGui::Spacing();
+
     /* Header */
-    ImGui::Text("Offset ");
-    ImGui::SameLine(70);
+    ImGui::Text("Offset  ");
     for (int c = 0; c < 16; ++c) {
-        ImGui::SameLine(70.0f + c * 25.0f);
-        ImGui::Text("%02X", c);
+        ImGui::SameLine(80.0f + c * 26.0f);
+        ImGui::TextDisabled("%02X", c);
     }
-    ImGui::SameLine(70.0f + 16 * 25.0f + 10.0f);
-    ImGui::Text("ASCII");
+    ImGui::SameLine(80.0f + 16 * 26.0f + 12.0f);
+    ImGui::TextDisabled("ASCII");
 
     ImGui::Separator();
 
-    /* Utiliser une police monospace et un child scrollable */
-    ImGui::BeginChild("##hexchild", ImVec2(0, 0), ImGuiChildFlags_None,
+    /* Scrollable child */
+    ImGui::BeginChild("##hexdata", ImVec2(0, 0), ImGuiChildFlags_None,
                       ImGuiWindowFlags_HorizontalScrollbar);
 
     for (int row = 0; row < 32; ++row) {
+        int base = row * 16;
+
+        /* Alternance de couleur de fond subtile */
+        if (row % 2 == 1) {
+            ImVec2 p = ImGui::GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddRectFilled(
+                p, ImVec2(p.x + 2000, p.y + ImGui::GetTextLineHeight()),
+                IM_COL32(255, 255, 255, 8));
+        }
+
         /* Offset */
-        ImGui::Text("%04X  ", row * 16);
+        ImGui::TextColored(ImVec4(0.45f, 0.55f, 0.75f, 1), "%04X  ", base);
 
         /* Hex bytes */
         for (int col = 0; col < 16; ++col) {
-            ImGui::SameLine(70.0f + col * 25.0f);
-            int off = row * 16 + col;
-            ImGui::Text("%02X", hex_data_[off]);
+            ImGui::SameLine(80.0f + col * 26.0f);
+            uint8_t b = hex_data_[base + col];
+
+            /* Surligner les words ATA importants */
+            bool highlight = false;
+            int word_idx = (base + col) / 2;
+            if (word_idx == 128 || word_idx == 129)  /* security status + master pwd */
+                highlight = true;
+
+            if (highlight)
+                ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1), "%02X", b);
+            else
+                ImGui::Text("%02X", b);
         }
 
         /* ASCII */
-        ImGui::SameLine(70.0f + 16 * 25.0f + 10.0f);
+        ImGui::SameLine(80.0f + 16 * 26.0f + 12.0f);
         char ascii[17];
         for (int col = 0; col < 16; ++col) {
-            uint8_t b = hex_data_[row * 16 + col];
+            uint8_t b = hex_data_[base + col];
             ascii[col] = (b >= 0x20 && b < 0x7F) ? static_cast<char>(b) : '.';
         }
         ascii[16] = '\0';
-        ImGui::TextUnformatted(ascii);
+        ImGui::TextDisabled("%s", ascii);
     }
 
     ImGui::EndChild();
     ImGui::End();
 }
 
-void GUI::draw_unlock_panel() {
-    if (selected_ < 0) return;
+/* ==========================================================================
+ *  Panel : Detection constructeur (VSC)
+ * ========================================================================== */
+
+void GUI::draw_vendor_panel() {
+    ImGui::Begin("Constructeur", &show_vendor_);
+
+    if (selected_ < 0) {
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1), "Selectionnez un disque.");
+        ImGui::End();
+        return;
+    }
+
     const auto& d = devices_[selected_];
+    ImGui::Text("Disque : %s", d.model);
+    ImGui::Spacing();
 
-    if (!SEC_IS_LOCKED(d.security_status)) return;
+    float avail = ImGui::GetContentRegionAvail().x;
+    if (ImGui::Button("Detecter le constructeur", ImVec2(avail, 0)))
+        do_detect_vendor();
 
-    ImGui::Begin("Deverrouillage", nullptr, ImGuiWindowFlags_NoCollapse);
-
-    ImGui::TextColored(ImVec4(1,0.3f,0.3f,1),
-        "Ce disque est VERROUILLE.");
+    ImGui::Spacing();
     ImGui::Separator();
-    ImGui::Text("Fonctionnalite de deverrouillage en cours de developpement.");
-    ImGui::Text("Sprints futurs : VSC password recovery, RAM patching.");
+    ImGui::Spacing();
+
+    if (vendor_detected_) {
+        ImGui::TextColored(ImVec4(0.3f, 0.9f, 0.4f, 1), "Detecte :");
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.55f, 0.70f, 1.0f, 1), "%s", vendor_name_.c_str());
+
+        ImGui::Spacing();
+        ImGui::TextWrapped("Les commandes VSC proprietaires sont disponibles. "
+                           "Vous pouvez proceder au backup SA et au deverrouillage.");
+    } else {
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1),
+            "Cliquez sur le bouton ci-dessus pour analyser le modele "
+            "et identifier le constructeur.");
+        ImGui::Spacing();
+        ImGui::TextDisabled("Constructeurs supportes :");
+        ImGui::BulletText("Western Digital (VSC 0xE0/0xE1)");
+        ImGui::BulletText("Seagate (SMART vendor 0xD6)");
+        ImGui::BulletText("Toshiba (0xC0/0xC1)");
+        ImGui::BulletText("HGST (0xC0/0xC1)");
+    }
 
     ImGui::End();
 }
+
+/* ==========================================================================
+ *  Panel : Deverrouillage
+ * ========================================================================== */
+
+void GUI::draw_unlock_panel() {
+    ImGui::Begin("Deverrouillage", &show_unlock_);
+
+    if (selected_ < 0) {
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1), "Selectionnez un disque.");
+        ImGui::End();
+        return;
+    }
+
+    const auto& d = devices_[selected_];
+    uint16_t s = d.security_status;
+
+    /* Statut actuel */
+    float rgb[3];
+    security_color(s, rgb);
+    ImGui::Text("Statut :");
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(rgb[0], rgb[1], rgb[2], 1),
+                       "%s", security_label(s));
+
+    ImGui::Spacing();
+
+    if (!SEC_IS_LOCKED(s) && unlock_state_ == UnlockState::IDLE) {
+        ImGui::TextColored(ImVec4(0.3f, 0.85f, 0.3f, 1),
+            "Ce disque n'est pas verrouille.");
+        ImGui::TextDisabled("Aucune action de deverrouillage necessaire.");
+        ImGui::End();
+        return;
+    }
+
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    /* Workflow explique */
+    ImGui::TextWrapped("Sequence de deverrouillage :");
+    ImGui::Spacing();
+
+    ImGui::TextDisabled("1.");
+    ImGui::SameLine();
+    ImGui::Text("Detection constructeur (VSC)");
+
+    ImGui::TextDisabled("2.");
+    ImGui::SameLine();
+    ImGui::Text("Backup Service Area");
+
+    ImGui::TextDisabled("3.");
+    ImGui::SameLine();
+    ImGui::Text("RAM Patch (flag securite)");
+
+    ImGui::TextDisabled("4.");
+    ImGui::SameLine();
+    ImGui::Text("SECURITY DISABLE PASSWORD");
+
+    ImGui::TextDisabled("5.");
+    ImGui::SameLine();
+    ImGui::Text("Verification post-unlock");
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    /* Bouton unlock */
+    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.55f, 0.15f, 0.15f, 1));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,  ImVec4(0.70f, 0.20f, 0.20f, 1));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,   ImVec4(0.62f, 0.18f, 0.18f, 1));
+
+    float avail = ImGui::GetContentRegionAvail().x;
+    if (ImGui::Button("DEVERROUILLER", ImVec2(avail, 36)))
+        do_unlock();
+
+    ImGui::PopStyleColor(3);
+
+    /* Resultat */
+    ImGui::Spacing();
+
+    if (unlock_state_ == UnlockState::SUCCESS) {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.05f, 0.20f, 0.05f, 1));
+        ImGui::BeginChild("##ok", ImVec2(avail, 50), ImGuiChildFlags_Borders);
+        ImGui::TextColored(ImVec4(0.3f, 0.95f, 0.3f, 1), "SUCCES");
+        ImGui::TextWrapped("%s", unlock_msg_.c_str());
+        ImGui::EndChild();
+        ImGui::PopStyleColor();
+    } else if (unlock_state_ == UnlockState::FAILED) {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.20f, 0.05f, 0.05f, 1));
+        ImGui::BeginChild("##fail", ImVec2(avail, 50), ImGuiChildFlags_Borders);
+        ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "ECHEC");
+        ImGui::TextWrapped("%s", unlock_msg_.c_str());
+        ImGui::EndChild();
+        ImGui::PopStyleColor();
+    }
+
+    ImGui::End();
+}
+
+/* ==========================================================================
+ *  Panel : Backup SA
+ * ========================================================================== */
+
+void GUI::draw_backup_panel() {
+    ImGui::Begin("Backup SA", &show_backup_);
+
+    if (selected_ < 0) {
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1), "Selectionnez un disque.");
+        ImGui::End();
+        return;
+    }
+
+    const auto& d = devices_[selected_];
+    ImGui::Text("Disque : %s", d.model);
+    ImGui::Spacing();
+
+    ImGui::TextWrapped("Sauvegarde les modules Service Area du disque "
+                       "avant toute operation d'ecriture.");
+
+    ImGui::Spacing();
+
+    float avail = ImGui::GetContentRegionAvail().x;
+    if (ImGui::Button("Sauvegarder la SA", ImVec2(avail, 0)))
+        do_backup_sa();
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    if (backup_done_) {
+        ImGui::TextColored(ImVec4(0.3f, 0.9f, 0.4f, 1), "Backup cree :");
+        ImGui::TextWrapped("%s", backup_path_.c_str());
+
+        if (!backup_sha_.empty()) {
+            ImGui::Spacing();
+            ImGui::TextDisabled("SHA-256 :");
+            ImGui::TextWrapped("%s", backup_sha_.c_str());
+        }
+    } else {
+        ImGui::TextDisabled("Aucun backup effectue pour ce disque.");
+    }
+
+    ImGui::End();
+}
+
+/* ==========================================================================
+ *  Panel : Mots de passe SA
+ * ========================================================================== */
+
+void GUI::draw_passwords_panel() {
+    ImGui::Begin("Mots de passe SA", &show_pwd_);
+
+    if (selected_ < 0) {
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1), "Selectionnez un disque.");
+        ImGui::End();
+        return;
+    }
+
+    const auto& d = devices_[selected_];
+    ImGui::Text("Disque : %s", d.model);
+    ImGui::Spacing();
+
+    ImGui::TextWrapped("Lit le module password de la Service Area "
+                       "pour extraire les mots de passe USER et MASTER.");
+
+    ImGui::Spacing();
+
+    float avail = ImGui::GetContentRegionAvail().x;
+    if (ImGui::Button("Extraire les mots de passe", ImVec2(avail, 0)))
+        do_extract_passwords();
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    if (!passwords_extracted_) {
+        ImGui::TextDisabled("Aucune extraction effectuee.");
+        ImGui::End();
+        return;
+    }
+
+    if (!password_info_.found) {
+        ImGui::TextColored(ImVec4(1, 0.6f, 0.2f, 1),
+            "Module lu — aucun password trouve.");
+        ImGui::End();
+        return;
+    }
+
+    /* Affichage des passwords */
+    ImGui::Checkbox("Reveler les mots de passe", &reveal_passwords_);
+    ImGui::Spacing();
+
+    auto show_pwd = [&](const char* label, const std::string& pwd) {
+        ImGui::TextDisabled("%s :", label);
+        ImGui::SameLine();
+        if (pwd.empty()) {
+            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1), "(vide)");
+        } else if (reveal_passwords_) {
+            ImGui::TextColored(ImVec4(0.55f, 0.70f, 1.0f, 1), "%s", pwd.c_str());
+        } else {
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1), "********");
+        }
+    };
+
+    show_pwd("USER",   password_info_.user_password);
+    show_pwd("MASTER", password_info_.master_password);
+
+    if (password_info_.is_empty_password) {
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(1, 0.8f, 0, 1),
+            "Note : password vide (tous zeros)");
+    }
+
+    ImGui::Spacing();
+    ImGui::TextDisabled("Security flags : 0x%02X", password_info_.security_flags);
+
+    ImGui::End();
+}
+
+/* ==========================================================================
+ *  Panel : Console (journal)
+ * ========================================================================== */
+
+void GUI::draw_log_console() {
+    ImGui::Begin("Console", &show_log_);
+
+    /* Toolbar */
+    if (ImGui::SmallButton("Effacer"))
+        log_.clear();
+    ImGui::SameLine();
+    ImGui::Checkbox("Auto-scroll", &log_autoscroll_);
+    ImGui::SameLine();
+    ImGui::TextDisabled("| %zu entrees", log_.size());
+
+    ImGui::Separator();
+
+    /* Messages */
+    ImGui::BeginChild("##loglist", ImVec2(0, 0), ImGuiChildFlags_None);
+
+    for (const auto& e : log_) {
+        /* Timestamp */
+        ImGui::TextDisabled("[%s]", e.timestamp.c_str());
+        ImGui::SameLine();
+
+        /* Level color */
+        ImVec4 col;
+        const char* prefix;
+        switch (e.level) {
+            case LogEntry::LVL_OK:   col = ImVec4(0.3f, 0.9f, 0.4f, 1); prefix = " OK  "; break;
+            case LogEntry::LVL_WARN: col = ImVec4(1.0f, 0.8f, 0.2f, 1); prefix = "WARN "; break;
+            case LogEntry::LVL_ERR:  col = ImVec4(1.0f, 0.3f, 0.3f, 1); prefix = " ERR "; break;
+            default:                 col = ImVec4(0.6f, 0.7f, 0.8f, 1); prefix = "INFO "; break;
+        }
+
+        ImGui::TextColored(col, "%s", prefix);
+        ImGui::SameLine();
+        ImGui::TextWrapped("%s", e.message.c_str());
+    }
+
+    if (log_autoscroll_ && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+        ImGui::SetScrollHereY(1.0f);
+
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+/* ==========================================================================
+ *  Status Bar (barre inferieure pleine largeur)
+ * ========================================================================== */
 
 void GUI::draw_status_bar() {
     ImGuiViewport* vp = ImGui::GetMainViewport();
@@ -371,23 +1203,69 @@ void GUI::draw_status_bar() {
     ImGui::SetNextWindowSize(ImVec2(vp->WorkSize.x, h));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 2));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.08f, 0.08f, 0.11f, 1));
 
     ImGui::Begin("##statusbar", nullptr,
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoDocking);
 
     if (status_timer_ > 0) {
         ImGui::TextUnformatted(status_msg_.c_str());
-        float dt = ImGui::GetIO().DeltaTime;
-        status_timer_ -= dt;
+        status_timer_ -= ImGui::GetIO().DeltaTime;
     } else {
-        ImGui::Text("Pret | %zu disque(s)", devices_.size());
+        ImGui::TextDisabled("Pret  |  %zu disque(s)  |  %s",
+            devices_.size(),
+            selected_ >= 0 ? devices_[selected_].model : "aucun selectionne");
     }
 
     ImGui::End();
-    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar(3);
 }
 
-/* Note : la creation de la fenetre Win32 + DX11 est dans main_gui.cpp
- * qui appelle les methodes draw_*() dans la boucle de rendu. */
+/* ==========================================================================
+ *  Popup : A propos
+ * ========================================================================== */
+
+void GUI::draw_about_popup() {
+    ImGui::OpenPopup("A propos");
+
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(420, 260));
+
+    if (ImGui::BeginPopupModal("A propos", &show_about_,
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+
+        ImGui::Spacing();
+        ImGui::TextColored(ImVec4(0.55f, 0.70f, 1.0f, 1),
+            "HDD Password Recovery Tool");
+        ImGui::Text("Version 1.0.0");
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TextWrapped(
+            "Outil bas-niveau C++20 pour le diagnostic et la recuperation "
+            "de mots de passe ATA sur disques durs verrouilles "
+            "(HDD Security Feature Set).");
+        ImGui::Spacing();
+        ImGui::TextDisabled("Constructeurs supportes :");
+        ImGui::BulletText("Western Digital (VSC 0xE0/0xE1)");
+        ImGui::BulletText("Seagate (SMART vendor 0xD6)");
+        ImGui::BulletText("Toshiba / HGST (0xC0/0xC1)");
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TextDisabled("Usage prive uniquement — outil de diagnostic.");
+
+        ImGui::Spacing();
+        float w = ImGui::GetContentRegionAvail().x;
+        if (ImGui::Button("Fermer", ImVec2(w, 0)))
+            show_about_ = false;
+
+        ImGui::EndPopup();
+    }
+}

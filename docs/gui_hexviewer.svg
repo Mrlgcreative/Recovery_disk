@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 560" font-family="Consolas, 'Courier New', monospace" font-size="11">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#16161e"/>
+      <stop offset="100%" stop-color="#111118"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="920" height="560" fill="url(#bg2)" rx="6"/>
+  <rect x="0" y="0" width="920" height="26" fill="#17172a" rx="6"/>
+  <rect x="0" y="13" width="920" height="13" fill="#17172a"/>
+
+  <!-- Tab bar -->
+  <rect x="4" y="3" width="82" height="22" rx="3" fill="#2d385c"/>
+  <text x="16" y="18" fill="#d0d4e0" font-size="11" font-weight="bold">Hex Viewer</text>
+  <rect x="90" y="3" width="62" height="22" rx="3" fill="#1e1e2c"/>
+  <text x="100" y="18" fill="#8b90a0" font-size="11">Details</text>
+  <rect x="156" y="3" width="80" height="22" rx="3" fill="#1e1e2c"/>
+  <text x="166" y="18" fill="#8b90a0" font-size="11">Securite ATA</text>
+
+  <!-- Title -->
+  <text x="16" y="48" fill="#555a6a" font-size="10">IDENTIFY DEVICE — 512 bytes (256 words)</text>
+
+  <!-- Column Headers -->
+  <text x="16" y="70" fill="#5a6080" font-size="10" font-weight="bold">Offset</text>
+  <text x="72" y="70" fill="#5a6080" font-size="10">00</text>
+  <text x="96" y="70" fill="#5a6080" font-size="10">01</text>
+  <text x="120" y="70" fill="#5a6080" font-size="10">02</text>
+  <text x="144" y="70" fill="#5a6080" font-size="10">03</text>
+  <text x="168" y="70" fill="#5a6080" font-size="10">04</text>
+  <text x="192" y="70" fill="#5a6080" font-size="10">05</text>
+  <text x="216" y="70" fill="#5a6080" font-size="10">06</text>
+  <text x="240" y="70" fill="#5a6080" font-size="10">07</text>
+  <text x="264" y="70" fill="#5a6080" font-size="10">08</text>
+  <text x="288" y="70" fill="#5a6080" font-size="10">09</text>
+  <text x="312" y="70" fill="#5a6080" font-size="10">0A</text>
+  <text x="336" y="70" fill="#5a6080" font-size="10">0B</text>
+  <text x="360" y="70" fill="#5a6080" font-size="10">0C</text>
+  <text x="384" y="70" fill="#5a6080" font-size="10">0D</text>
+  <text x="408" y="70" fill="#5a6080" font-size="10">0E</text>
+  <text x="432" y="70" fill="#5a6080" font-size="10">0F</text>
+  <text x="468" y="70" fill="#5a6080" font-size="10">ASCII</text>
+
+  <line x1="10" y1="76" x2="910" y2="76" stroke="#2c2e3c"/>
+
+  <!-- Row 0 : 0000 -->
+  <text x="16" y="94" fill="#728ab0" font-size="11">0000</text>
+  <text x="72" y="94" fill="#d0d4e0" font-size="11">0C 5A 00 3F F0 01 00 00 00 00 00 00 3F 00 00 00</text>
+  <text x="468" y="94" fill="#555a6a" font-size="11">.Z.?........?...</text>
+
+  <!-- Row 1 : 0010 (alt bg) -->
+  <rect x="4" y="98" width="912" height="16" fill="#ffffff08" rx="1"/>
+  <text x="16" y="112" fill="#728ab0" font-size="11">0010</text>
+  <text x="72" y="112" fill="#d0d4e0" font-size="11">00 00 00 00 57 44 2D 57 4D 43 34 4E 30 31 32 33</text>
+  <text x="468" y="112" fill="#555a6a" font-size="11">....WD-WMC4N0123</text>
+
+  <!-- Row 2 : 0020 -->
+  <text x="16" y="130" fill="#728ab0" font-size="11">0020</text>
+  <text x="72" y="130" fill="#d0d4e0" font-size="11">34 35 36 20 20 20 20 20 00 00 00 00 30 31 2E 30</text>
+  <text x="468" y="130" fill="#555a6a" font-size="11">456     ....01.0</text>
+
+  <!-- Row 3 : 0030 (alt bg) -->
+  <rect x="4" y="134" width="912" height="16" fill="#ffffff08" rx="1"/>
+  <text x="16" y="148" fill="#728ab0" font-size="11">0030</text>
+  <text x="72" y="148" fill="#d0d4e0" font-size="11">31 41 30 31 57 44 43 20 57 44 31 30 45 5A 45 58</text>
+  <text x="468" y="148" fill="#555a6a" font-size="11">1A01WDC WD10EZEX</text>
+
+  <!-- Row 4 : 0040 -->
+  <text x="16" y="166" fill="#728ab0" font-size="11">0040</text>
+  <text x="72" y="166" fill="#d0d4e0" font-size="11">2D 30 30 57 20 20 20 20 20 20 20 20 20 20 20 20</text>
+  <text x="468" y="166" fill="#555a6a" font-size="11">-00W            </text>
+
+  <!-- Rows 5-9 : generic data -->
+  <rect x="4" y="170" width="912" height="16" fill="#ffffff08" rx="1"/>
+  <text x="16" y="184" fill="#728ab0" font-size="11">0050</text>
+  <text x="72" y="184" fill="#d0d4e0" font-size="11">10 00 01 00 00 02 00 00 00 07 60 34 00 40 00 00</text>
+  <text x="468" y="184" fill="#555a6a" font-size="11">..........`4.@..</text>
+
+  <text x="16" y="202" fill="#728ab0" font-size="11">0060</text>
+  <text x="72" y="202" fill="#d0d4e0" font-size="11">00 00 07 00 03 00 78 00 00 00 00 00 00 00 00 00</text>
+  <text x="468" y="202" fill="#555a6a" font-size="11">......x.........</text>
+
+  <rect x="4" y="206" width="912" height="16" fill="#ffffff08" rx="1"/>
+  <text x="16" y="220" fill="#728ab0" font-size="11">0070</text>
+  <text x="72" y="220" fill="#d0d4e0" font-size="11">00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00</text>
+  <text x="468" y="220" fill="#555a6a" font-size="11">................</text>
+
+  <text x="16" y="238" fill="#728ab0" font-size="11">0080</text>
+  <text x="72" y="238" fill="#d0d4e0" font-size="11">00 00 00 00 00 00 00 00 F0 74 EB 01 00 00 00 00</text>
+  <text x="468" y="238" fill="#555a6a" font-size="11">........ðt......ë</text>
+
+  <rect x="4" y="242" width="912" height="16" fill="#ffffff08" rx="1"/>
+  <text x="16" y="256" fill="#728ab0" font-size="11">0090</text>
+  <text x="72" y="256" fill="#d0d4e0" font-size="11">00 20 03 00 6B 74 E9 B2 6B 74 E9 B2 20 64 00 00</text>
+  <text x="468" y="256" fill="#555a6a" font-size="11">. ..ktéëktéë d..</text>
+
+  <!-- ... more rows ... -->
+  <text x="16" y="274" fill="#728ab0" font-size="11">00A0</text>
+  <text x="72" y="274" fill="#d0d4e0" font-size="11">FE FF 00 00 00 00 00 00 00 00 00 00 00 00 00 00</text>
+  <text x="468" y="274" fill="#555a6a" font-size="11">þÿ..............</text>
+
+  <!-- ===== HIGHLIGHTED ROW: Word 128 (offset 0x100) — Security Status ===== -->
+  <rect x="4" y="296" width="912" height="20" fill="#331a0a" rx="2" stroke="#ff9933" stroke-width="0.5"/>
+
+  <text x="16" y="312" fill="#728ab0" font-size="11" font-weight="bold">0100</text>
+  <text x="72" y="312" fill="#ff9933" font-size="11" font-weight="bold">07 00</text>
+  <text x="120" y="312" fill="#d0d4e0" font-size="11">FE FF 00 00 00 00 00 00 00 00 00 00 00 00</text>
+  <text x="468" y="312" fill="#555a6a" font-size="11">..þÿ............</text>
+
+  <!-- Annotation arrow -->
+  <line x1="68" y1="328" x2="68" y2="346" stroke="#ff9933" stroke-width="1"/>
+  <line x1="68" y1="346" x2="180" y2="346" stroke="#ff9933" stroke-width="1"/>
+  <text x="186" y="350" fill="#ff9933" font-size="10" font-weight="bold">← Word 128 : Security Status = 0x0007 (LOCKED + ENABLED + SUPPORTED)</text>
+
+  <!-- Row after -->
+  <rect x="4" y="356" width="912" height="20" fill="#331a0a22" rx="2"/>
+  <text x="16" y="372" fill="#728ab0" font-size="11">0110</text>
+  <text x="72" y="372" fill="#ff9933" font-size="11">FE FE</text>
+  <text x="120" y="372" fill="#d0d4e0" font-size="11">00 00 00 00 00 00 00 00 00 00 00 00 00 00</text>
+  <text x="468" y="372" fill="#555a6a" font-size="11">þþ..............</text>
+
+  <!-- Annotation -->
+  <line x1="68" y1="378" x2="68" y2="394" stroke="#ff9933" stroke-width="1" opacity="0.6"/>
+  <line x1="68" y1="394" x2="180" y2="394" stroke="#ff9933" stroke-width="1" opacity="0.6"/>
+  <text x="186" y="398" fill="#ff9933" font-size="10" opacity="0.8">← Word 129 : Master Password Revision</text>
+
+  <!-- Remaining rows -->
+  <text x="16" y="420" fill="#728ab0" font-size="11">0120</text>
+  <text x="72" y="420" fill="#d0d4e0" font-size="11">00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00</text>
+  <text x="468" y="420" fill="#555a6a" font-size="11">................</text>
+
+  <rect x="4" y="424" width="912" height="16" fill="#ffffff08" rx="1"/>
+  <text x="16" y="438" fill="#728ab0" font-size="11">0130</text>
+  <text x="72" y="438" fill="#d0d4e0" font-size="11">00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00</text>
+  <text x="468" y="438" fill="#555a6a" font-size="11">................</text>
+
+  <!-- Scrollbar track -->
+  <rect x="902" y="78" width="10" height="370" rx="4" fill="#14141e"/>
+  <rect x="902" y="200" width="10" height="80" rx="4" fill="#3a3e50"/>
+
+  <!-- Legend -->
+  <rect x="16" y="468" width="890" height="1" fill="#2c2e3c"/>
+  <rect x="16" y="480" width="12" height="12" rx="2" fill="#ff993350" stroke="#ff9933" stroke-width="0.5"/>
+  <text x="34" y="491" fill="#ff9933" font-size="10">Words ATA importants (128-129 : Security Status / Master Password)</text>
+  <text x="16" y="516" fill="#555a6a" font-size="10">512 bytes — 32 lignes x 16 colonnes — Defilement vertical actif</text>
+
+  <!-- Footer -->
+  <rect x="0" y="536" width="920" height="24" fill="#14141e"/>
+  <text x="16" y="552" fill="#555a6a" font-size="10">IDENTIFY DEVICE lu avec succes  |  WDC WD10EZEX-00W  |  S/N: WD-WMC4N0123456</text>
+</svg>

@@ -1,0 +1,297 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="Segoe UI, Consolas, monospace" font-size="12">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#16161e"/>
+      <stop offset="100%" stop-color="#111118"/>
+    </linearGradient>
+    <linearGradient id="btnGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a3d6e"/>
+      <stop offset="100%" stop-color="#1e2e52"/>
+    </linearGradient>
+    <linearGradient id="btnDanger" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8c2626"/>
+      <stop offset="100%" stop-color="#6e1e1e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Window Background -->
+  <rect width="1280" height="800" fill="url(#bgGrad)"/>
+
+  <!-- ============================================================ -->
+  <!--  MENU BAR                                                     -->
+  <!-- ============================================================ -->
+  <rect x="0" y="0" width="1280" height="28" fill="#19192a" stroke="#2c2e3c" stroke-width="0.5"/>
+  <text x="14" y="18" fill="#8b90a0" font-size="12">Fichier</text>
+  <text x="66" y="18" fill="#8b90a0" font-size="12">Affichage</text>
+  <text x="136" y="18" fill="#8b90a0" font-size="12">Aide</text>
+  <!-- Right indicator -->
+  <text x="1022" y="18" fill="#555a6a" font-size="11">2 disque(s)  |  WDC WD10EZEX-00W</text>
+
+  <!-- ============================================================ -->
+  <!--  LEFT PANEL : Disques (22% width = ~282px)                    -->
+  <!-- ============================================================ -->
+  <rect x="0" y="28" width="282" height="744" fill="#111118" stroke="#2c2e3c" stroke-width="0.5"/>
+  <!-- Tab -->
+  <rect x="0" y="28" width="282" height="24" fill="#17172a"/>
+  <rect x="4" y="28" width="70" height="24" rx="3" fill="#2d385c"/>
+  <text x="16" y="44" fill="#d0d4e0" font-size="11" font-weight="bold">Disques</text>
+
+  <!-- Scan Button -->
+  <rect x="12" y="62" width="258" height="30" rx="4" fill="url(#btnGrad)" stroke="#3a5090" stroke-width="0.5"/>
+  <text x="90" y="82" fill="#c0d0f0" font-size="12" font-weight="bold">Scanner (F5)</text>
+
+  <!-- Separator -->
+  <line x1="12" y1="102" x2="270" y2="102" stroke="#2c2e3c"/>
+
+  <!-- Device Card 1 — SELECTED -->
+  <rect x="12" y="112" width="258" height="78" rx="4" fill="#28335a" stroke="#3a4e80" stroke-width="0.8"/>
+  <text x="22" y="131" fill="#e04040" font-size="11" font-weight="bold">[LOCKED]</text>
+  <text x="90" y="131" fill="#d0d4e0" font-size="11">Disque 0</text>
+  <text x="22" y="150" fill="#b0c0f0" font-size="12" font-weight="bold">WDC WD10EZEX-00W</text>
+  <text x="22" y="168" fill="#555a6a" font-size="10">S/N: WD-WMC4N0123456  |  FW: 01.01A01</text>
+  <!-- Selected indicator left line -->
+  <rect x="12" y="112" width="3" height="78" rx="1" fill="#4a6eb8"/>
+
+  <!-- Device Card 2 -->
+  <rect x="12" y="198" width="258" height="78" rx="4" fill="#1c1c28" stroke="#2c2e3c" stroke-width="0.5"/>
+  <text x="22" y="217" fill="#35cc45" font-size="11" font-weight="bold">[OK]</text>
+  <text x="55" y="217" fill="#d0d4e0" font-size="11">Disque 1</text>
+  <text x="22" y="236" fill="#b0c0f0" font-size="12" font-weight="bold">ST2000DM008-2FR1</text>
+  <text x="22" y="254" fill="#555a6a" font-size="10">S/N: ZFL0A1BC  |  FW: CC26</text>
+
+  <!-- ============================================================ -->
+  <!--  CENTER TOP : Details / Securite ATA / Hex Viewer  (tabs)     -->
+  <!--  Width = 1280 - 282 - 448 = 550px, starts at x=282           -->
+  <!-- ============================================================ -->
+  <rect x="282" y="28" width="550" height="516" fill="#111118" stroke="#2c2e3c" stroke-width="0.5"/>
+  
+  <!-- Tabs row -->
+  <rect x="282" y="28" width="550" height="24" fill="#17172a"/>
+  <rect x="286" y="28" width="64" height="24" rx="3" fill="#2d385c"/>
+  <text x="296" y="44" fill="#d0d4e0" font-size="11" font-weight="bold">Details</text>
+  <rect x="354" y="28" width="90" height="24" rx="3" fill="#1e1e2c"/>
+  <text x="362" y="44" fill="#8b90a0" font-size="11">Securite ATA</text>
+  <rect x="448" y="28" width="78" height="24" rx="3" fill="#1e1e2c"/>
+  <text x="456" y="44" fill="#8b90a0" font-size="11">Hex Viewer</text>
+
+  <!-- Details Panel Content -->
+  <text x="300" y="74" fill="#8bb2ff" font-size="14" font-weight="bold">WDC WD10EZEX-00W</text>
+  <line x1="300" y1="82" x2="812" y2="82" stroke="#2c2e3c"/>
+
+  <!-- Info Table -->
+  <text x="300" y="106" fill="#555a6a" font-size="11">Chemin</text>
+  <text x="420" y="106" fill="#d0d4e0" font-size="11">\\.\PhysicalDrive0</text>
+
+  <text x="300" y="126" fill="#555a6a" font-size="11">Modele</text>
+  <text x="420" y="126" fill="#d0d4e0" font-size="11">WDC WD10EZEX-00W</text>
+
+  <text x="300" y="146" fill="#555a6a" font-size="11">N. Serie</text>
+  <text x="420" y="146" fill="#d0d4e0" font-size="11">WD-WMC4N0123456</text>
+
+  <text x="300" y="166" fill="#555a6a" font-size="11">Firmware</text>
+  <text x="420" y="166" fill="#d0d4e0" font-size="11">01.01A01</text>
+
+  <text x="300" y="186" fill="#555a6a" font-size="11">Taille</text>
+  <text x="420" y="186" fill="#d0d4e0" font-size="11">931.5 Go  (1953525168 secteurs)</text>
+
+  <text x="300" y="206" fill="#555a6a" font-size="11">Security (w128)</text>
+  <text x="420" y="206" fill="#e04040" font-size="11" font-weight="bold">LOCKED  (0x0007)</text>
+
+  <line x1="300" y1="218" x2="812" y2="218" stroke="#2c2e3c"/>
+
+  <!-- Action Buttons -->
+  <rect x="300" y="230" width="155" height="28" rx="4" fill="url(#btnGrad)" stroke="#3a5090" stroke-width="0.5"/>
+  <text x="316" y="249" fill="#c0d0f0" font-size="11">Lire IDENTIFY brut</text>
+
+  <rect x="464" y="230" width="170" height="28" rx="4" fill="url(#btnGrad)" stroke="#3a5090" stroke-width="0.5"/>
+  <text x="476" y="249" fill="#c0d0f0" font-size="11">Detecter constructeur</text>
+
+  <!-- ============================================================ -->
+  <!-- SECURITY ATA panel (shown below as if it were the active tab) -->
+  <!-- We show it inline below details since it's an important view  -->
+  <!-- ============================================================ -->
+  <rect x="300" y="275" width="515" height="255" rx="4" fill="#14141e" stroke="#2c2e3c" stroke-width="0.5"/>
+  <text x="312" y="295" fill="#8bb2ff" font-size="12" font-weight="bold">Analyse Securite ATA</text>
+  <text x="312" y="312" fill="#555a6a" font-size="10">Word 128 brut : 0x0007</text>
+  <line x1="312" y1="320" x2="800" y2="320" stroke="#2c2e3c"/>
+
+  <!-- Flags -->
+  <text x="312" y="340" fill="#35cc45" font-size="11">[X]</text>
+  <text x="340" y="340" fill="#d0d4e0" font-size="11">SUPPORTED</text>
+  <text x="494" y="340" fill="#555a6a" font-size="10">Security Feature Set disponible</text>
+
+  <text x="312" y="358" fill="#35cc45" font-size="11">[X]</text>
+  <text x="340" y="358" fill="#d0d4e0" font-size="11">ENABLED</text>
+  <text x="494" y="358" fill="#555a6a" font-size="10">Un password est defini</text>
+
+  <text x="312" y="376" fill="#35cc45" font-size="11">[X]</text>
+  <text x="340" y="376" fill="#d0d4e0" font-size="11">LOCKED</text>
+  <text x="494" y="376" fill="#555a6a" font-size="10">Disque verrouille - acces bloque</text>
+
+  <text x="312" y="394" fill="#606570" font-size="11">[ ]</text>
+  <text x="340" y="394" fill="#606570" font-size="11">FROZEN</text>
+  <text x="494" y="394" fill="#555a6a" font-size="10">Securite gelee par BIOS/OS</text>
+
+  <text x="312" y="412" fill="#606570" font-size="11">[ ]</text>
+  <text x="340" y="412" fill="#606570" font-size="11">COUNT_EXPIRED</text>
+  <text x="494" y="412" fill="#555a6a" font-size="10">Trop de tentatives echouees</text>
+
+  <text x="312" y="430" fill="#606570" font-size="11">[ ]</text>
+  <text x="340" y="430" fill="#606570" font-size="11">ENHANCED_ERASE</text>
+  <text x="494" y="430" fill="#555a6a" font-size="10">Enhanced Secure Erase disponible</text>
+
+  <line x1="312" y1="442" x2="800" y2="442" stroke="#2c2e3c"/>
+
+  <!-- Verdict -->
+  <text x="312" y="462" fill="#d0d4e0" font-size="11">Verdict :</text>
+  <text x="370" y="462" fill="#ff5050" font-size="11" font-weight="bold">VERROUILLE — Password requis pour deverrouillage.</text>
+
+  <!-- ============================================================ -->
+  <!--  RIGHT PANEL : Constructeur / Deverrouillage / Backup / Pwd   -->
+  <!--  Width ~448px                                                  -->
+  <!-- ============================================================ -->
+  <rect x="832" y="28" width="448" height="744" fill="#111118" stroke="#2c2e3c" stroke-width="0.5"/>
+
+  <!-- Tabs row -->
+  <rect x="832" y="28" width="448" height="24" fill="#17172a"/>
+  <rect x="836" y="28" width="92" height="24" rx="3" fill="#2d385c"/>
+  <text x="848" y="44" fill="#d0d4e0" font-size="11" font-weight="bold">Constructeur</text>
+  <rect x="932" y="28" width="105" height="24" rx="3" fill="#1e1e2c"/>
+  <text x="940" y="44" fill="#8b90a0" font-size="11">Deverrouillage</text>
+  <rect x="1041" y="28" width="72" height="24" rx="3" fill="#1e1e2c"/>
+  <text x="1049" y="44" fill="#8b90a0" font-size="11">Backup SA</text>
+  <rect x="1117" y="28" width="105" height="24" rx="3" fill="#1e1e2c"/>
+  <text x="1125" y="44" fill="#8b90a0" font-size="11">Mots de passe</text>
+
+  <!-- Constructeur panel content -->
+  <text x="850" y="74" fill="#d0d4e0" font-size="11">Disque : WDC WD10EZEX-00W</text>
+
+  <rect x="850" y="86" width="412" height="28" rx="4" fill="url(#btnGrad)" stroke="#3a5090" stroke-width="0.5"/>
+  <text x="948" y="105" fill="#c0d0f0" font-size="11">Detecter le constructeur</text>
+
+  <line x1="850" y1="124" x2="1262" y2="124" stroke="#2c2e3c"/>
+
+  <text x="850" y="146" fill="#35cc45" font-size="12" font-weight="bold">Detecte :</text>
+  <text x="920" y="146" fill="#8bb2ff" font-size="12" font-weight="bold">Western Digital</text>
+
+  <text x="850" y="168" fill="#8b90a0" font-size="11" style="word-spacing:1px">Les commandes VSC proprietaires sont disponibles.</text>
+  <text x="850" y="184" fill="#8b90a0" font-size="11">Vous pouvez proceder au backup SA et au deverrouillage.</text>
+
+  <!-- ======== Unlock panel inlined below ======== -->
+  <line x1="850" y1="200" x2="1262" y2="200" stroke="#2c2e3c"/>
+  <text x="850" y="222" fill="#d0d4e0" font-size="12" font-weight="bold">Deverrouillage</text>
+
+  <text x="850" y="244" fill="#d0d4e0" font-size="11">Statut :</text>
+  <text x="896" y="244" fill="#e04040" font-size="11" font-weight="bold">LOCKED</text>
+
+  <line x1="850" y1="256" x2="1262" y2="256" stroke="#2c2e3c"/>
+
+  <!-- Workflow steps -->
+  <text x="850" y="274" fill="#d0d4e0" font-size="11">Sequence de deverrouillage :</text>
+
+  <text x="858" y="296" fill="#555a6a" font-size="11">1.</text>
+  <text x="878" y="296" fill="#d0d4e0" font-size="11">Detection constructeur (VSC)</text>
+  <text x="1096" y="296" fill="#35cc45" font-size="11">✓</text>
+
+  <text x="858" y="316" fill="#555a6a" font-size="11">2.</text>
+  <text x="878" y="316" fill="#d0d4e0" font-size="11">Backup Service Area</text>
+
+  <text x="858" y="336" fill="#555a6a" font-size="11">3.</text>
+  <text x="878" y="336" fill="#d0d4e0" font-size="11">RAM Patch (flag securite)</text>
+
+  <text x="858" y="356" fill="#555a6a" font-size="11">4.</text>
+  <text x="878" y="356" fill="#d0d4e0" font-size="11">SECURITY DISABLE PASSWORD</text>
+
+  <text x="858" y="376" fill="#555a6a" font-size="11">5.</text>
+  <text x="878" y="376" fill="#d0d4e0" font-size="11">Verification post-unlock</text>
+
+  <!-- Unlock Button (red/danger) -->
+  <rect x="850" y="396" width="412" height="36" rx="4" fill="url(#btnDanger)" stroke="#aa3030" stroke-width="0.8"/>
+  <text x="988" y="420" fill="#ffc0c0" font-size="13" font-weight="bold">DEVERROUILLER</text>
+
+  <!-- ======== Backup SA result ======== -->
+  <line x1="850" y1="448" x2="1262" y2="448" stroke="#2c2e3c"/>
+  <text x="850" y="470" fill="#d0d4e0" font-size="12" font-weight="bold">Backup SA</text>
+  <text x="850" y="491" fill="#35cc45" font-size="11" font-weight="bold">Backup cree :</text>
+  <text x="850" y="508" fill="#8b90a0" font-size="10">backup_WD-WMC4N0123456_20260316_142055.bin</text>
+  <text x="850" y="526" fill="#555a6a" font-size="10">SHA-256 :</text>
+  <text x="850" y="542" fill="#8b90a0" font-size="9">a1b2c3d4e5f6...789abc0def12345678</text>
+
+  <!-- ======== Passwords panel ======== -->
+  <line x1="850" y1="558" x2="1262" y2="558" stroke="#2c2e3c"/>
+  <text x="850" y="580" fill="#d0d4e0" font-size="12" font-weight="bold">Mots de passe SA</text>
+
+  <!-- Checkbox -->
+  <rect x="850" y="590" width="14" height="14" rx="2" fill="#2a2a3a" stroke="#4a6eb8"/>
+  <text x="870" y="602" fill="#d0d4e0" font-size="11">Reveler les mots de passe</text>
+
+  <text x="850" y="626" fill="#555a6a" font-size="11">USER :</text>
+  <text x="900" y="626" fill="#8b90a0" font-size="11">********</text>
+
+  <text x="850" y="646" fill="#555a6a" font-size="11">MASTER :</text>
+  <text x="916" y="646" fill="#8b90a0" font-size="11">********</text>
+
+  <!-- ============================================================ -->
+  <!--  BOTTOM CENTER : Console (28% of center height)               -->
+  <!-- ============================================================ -->
+  <rect x="282" y="544" width="550" height="228" fill="#111118" stroke="#2c2e3c" stroke-width="0.5"/>
+
+  <!-- Tab -->
+  <rect x="282" y="544" width="550" height="24" fill="#17172a"/>
+  <rect x="286" y="544" width="64" height="24" rx="3" fill="#2d385c"/>
+  <text x="296" y="560" fill="#d0d4e0" font-size="11" font-weight="bold">Console</text>
+
+  <!-- Toolbar -->
+  <rect x="300" y="574" width="52" height="18" rx="3" fill="#1e1e2c" stroke="#2c2e3c" stroke-width="0.5"/>
+  <text x="310" y="587" fill="#8b90a0" font-size="10">Effacer</text>
+  <rect x="360" y="575" width="10" height="10" rx="2" fill="#2a2a3a" stroke="#4a6eb8"/>
+  <text x="376" y="587" fill="#d0d4e0" font-size="10">Auto-scroll</text>
+  <text x="456" y="587" fill="#555a6a" font-size="10">| 8 entrees</text>
+
+  <line x1="300" y1="596" x2="812" y2="596" stroke="#2c2e3c"/>
+
+  <!-- Log entries -->
+  <text x="300" y="614" fill="#555a6a" font-size="10">[14:20:54]</text>
+  <text x="376" y="614" fill="#6080b0" font-size="10">INFO </text>
+  <text x="412" y="614" fill="#d0d4e0" font-size="10">HDD Password Recovery Tool v1.0.0</text>
+
+  <text x="300" y="632" fill="#555a6a" font-size="10">[14:20:54]</text>
+  <text x="376" y="632" fill="#6080b0" font-size="10">INFO </text>
+  <text x="412" y="632" fill="#d0d4e0" font-size="10">Interface graphique initialisee.</text>
+
+  <text x="300" y="650" fill="#555a6a" font-size="10">[14:20:55]</text>
+  <text x="376" y="650" fill="#6080b0" font-size="10">INFO </text>
+  <text x="412" y="650" fill="#d0d4e0" font-size="10">Scan des disques physiques...</text>
+
+  <text x="300" y="668" fill="#555a6a" font-size="10">[14:20:55]</text>
+  <text x="376" y="668" fill="#35cc45" font-size="10"> OK  </text>
+  <text x="412" y="668" fill="#d0d4e0" font-size="10">2 disque(s) detecte(s).</text>
+
+  <text x="300" y="686" fill="#555a6a" font-size="10">[14:21:02]</text>
+  <text x="376" y="686" fill="#6080b0" font-size="10">INFO </text>
+  <text x="412" y="686" fill="#d0d4e0" font-size="10">IDENTIFY DEVICE sur \\.\PhysicalDrive0</text>
+
+  <text x="300" y="704" fill="#555a6a" font-size="10">[14:21:02]</text>
+  <text x="376" y="704" fill="#35cc45" font-size="10"> OK  </text>
+  <text x="412" y="704" fill="#d0d4e0" font-size="10">IDENTIFY DEVICE lu avec succes (512 bytes).</text>
+
+  <text x="300" y="722" fill="#555a6a" font-size="10">[14:21:05]</text>
+  <text x="376" y="722" fill="#35cc45" font-size="10"> OK  </text>
+  <text x="412" y="722" fill="#d0d4e0" font-size="10">Constructeur detecte : Western Digital</text>
+
+  <text x="300" y="740" fill="#555a6a" font-size="10">[14:21:10]</text>
+  <text x="376" y="740" fill="#ffcc33" font-size="10">WARN </text>
+  <text x="412" y="740" fill="#d0d4e0" font-size="10">Disque verrouille — deverrouillage requis.</text>
+
+  <!-- ============================================================ -->
+  <!--  STATUS BAR (bottom full width)                               -->
+  <!-- ============================================================ -->
+  <rect x="0" y="772" width="1280" height="28" fill="#14141e" stroke="#2c2e3c" stroke-width="0.5"/>
+  <text x="14" y="790" fill="#555a6a" font-size="11">Pret  |  2 disque(s)  |  WDC WD10EZEX-00W</text>
+
+  <!-- ============================================================ -->
+  <!--  TITLE   (overlay label)                                      -->
+  <!-- ============================================================ -->
+  <!-- Watermark / build info -->
+  <text x="1140" y="790" fill="#333848" font-size="10">v1.0.0 — ImGui Docking</text>
+</svg>
